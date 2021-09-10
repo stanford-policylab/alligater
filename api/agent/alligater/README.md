@@ -5,6 +5,10 @@ This is a flexible feature-gating library.
 Detailed documentation is in the classes themselves. The quickstart version is:
 
 ```py
+from alligater import *
+
+
+
 # 1. Create the gater withe your list of features.
 gater = Alligater(
         features=[
