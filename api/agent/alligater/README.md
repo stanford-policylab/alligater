@@ -8,12 +8,18 @@ Detailed documentation is in the classes themselves. The quickstart version is:
 # 1. Create the gater withe your list of features.
 gater = Alligater(
         features=[
+            # This feature will be rolled out randomly to 25% of users.
             Feature(
                 'my_feature',
                 variants=[
                     Variant('on', True),
                     Variant('off', False),
                     ],
+                rollouts=[Rollout(
+                  name='my_rollout',
+                  population=Population.Percent(0.25, 'seed_value'),
+                  arms=['on'],
+                  )],
                 default_arm='off',
                 ),
             ],
