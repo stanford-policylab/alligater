@@ -38,12 +38,12 @@ else:
 
 ## Features:
 
-    1. Create any number of features with any number of treatment options.
-    2. Hierarchical feature definitions. Treatments can be other features. These are evaluated recursively.
-    3. Load feature definitions from YAML.
-    4. Flexible targetting. features can target multiple populations with arbitrarily complex logic, assigning treatments either randomly or explicitly.
-    5. Stable assignments. Choices (even random ones) made by the gater are deterministic.
-    6. Robust logging. Assignment choices can be inspected in detail with trace logging. The "state of the world" can also be logged as needed for experiment analysis.
+1. Create any number of features with any number of treatment options.
+2. Hierarchical feature definitions. Treatments can be other features. These are evaluated recursively.
+3. Load feature definitions from YAML.
+4. Flexible targetting. features can target multiple populations with arbitrarily complex logic, assigning treatments either randomly or explicitly.
+5. Stable assignments. Choices (even random ones) made by the gater are deterministic.
+6. Robust logging. Assignment choices can be inspected in detail with trace logging. The "state of the world" can also be logged as needed for experiment analysis.
 
 Read the class documentation for more info!
 
