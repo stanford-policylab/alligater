@@ -1,0 +1,175 @@
+import unittest
+
+import alligater.func as func
+
+
+
+class TestFunc(unittest.TestCase):
+
+    def test_op_repr(self):
+        """Test the representations of the operators."""
+        assert repr(func.Eq) == 'Eq'
+        assert repr(func.Ne) == 'Not(Eq)'
+        assert repr(func.And) == 'And'
+        assert repr(func.Or) == 'Or'
+        assert repr(func.Not) == 'Not'
+        assert repr(func.Lt) == 'Lt'
+        assert repr(func.Le) == 'Le'
+        assert repr(func.Gt) == 'Not(Le)'
+        assert repr(func.Ge) == 'Not(Lt)'
+        assert repr(func.In) == 'In'
+        assert repr(func.Concat) == 'Concat'
+        assert repr(func.Hash) == 'Hash'
+
+    def test_expr_repr(self):
+        """Test the representations of expressions."""
+        assert repr(func.Eq("a", "b")) == "'a' Eq 'b'"
+        assert repr(func.Ne("a", "b")) == "Not('a' Eq 'b')"
+        assert repr(
+                func.And(
+                    func.Eq("a", "a"),
+                    func.Lt(10, 11),
+                    )
+                ) == "('a' Eq 'a') And (10 Lt 11)"
+        assert repr(
+                func.Or(
+                    func.Eq("a", "b"),
+                    func.Lt(10, 11),
+                    )
+                ) == "('a' Eq 'b') Or (10 Lt 11)"
+        assert repr(func.Not(True)) == "Not(True)"
+        assert repr(func.Le(10, 10)) == "10 Le 10"
+        assert repr(func.Gt(11, 10)) == "Not(11 Le 10)"
+        assert repr(func.Ge(11, 10)) == "Not(11 Lt 10)"
+        assert repr(func.In("a", ["a", "b", "c"])) == "'a' In ['a', 'b', 'c']"
+        assert repr(func.Concat("a", "b", "c")) == "Concat('a', 'b', 'c')"
+        assert repr(func.Hash("foo")) == "Hash('foo')"
+
+    def test_eq(self):
+        """Test equality."""
+        assert func.Eq("a", "a")() is True
+        assert func.Eq("a", "b")() is False
+        assert func.Eq(1, 1)() is True
+        assert func.Eq(1, 0)() is False
+
+    def test_ne(self):
+        """Test inequality."""
+        assert func.Ne("a", "a")() is False
+        assert func.Ne("a", "b")() is True
+        assert func.Ne(1, 1)() is False
+        assert func.Ne(1, 0)() is True
+
+    def test_and(self):
+        """Test and."""
+        assert func.And(
+                func.Eq("a", "a"),
+                func.Eq(1, 1),
+                )() is True
+        assert func.And(
+                func.Eq("a", "a"),
+                func.Eq(1, 0),
+                )() is False
+        assert func.And(
+                func.Eq("a", "b"),
+                func.Eq(1, 0),
+                )() is False
+        assert func.And(
+                func.Eq("a", "b"),
+                func.Eq(1, 1),
+                )() is False
+
+    def test_or(self):
+        """Test or."""
+        assert func.Or(
+                func.Eq("a", "a"),
+                func.Eq(1, 1),
+                )() is True
+        assert func.Or(
+                func.Eq("a", "a"),
+                func.Eq(1, 0),
+                )() is True
+        assert func.Or(
+                func.Eq("a", "b"),
+                func.Eq(1, 0),
+                )() is False
+        assert func.Or(
+                func.Eq("a", "b"),
+                func.Eq(1, 1),
+                )() is True
+
+    def test_not(self):
+        """Test negation."""
+        assert func.Not(True)() is False
+        assert func.Not(False)() is True
+
+    def test_lt(self):
+        """Test < equality."""
+        assert func.Lt(10, 11)() is True
+        assert func.Lt(11, 11)() is False
+        assert func.Lt(12, 11)() is False
+
+    def test_le(self):
+        """Test <= equality."""
+        assert func.Le(10, 11)() is True
+        assert func.Le(11, 11)() is True
+        assert func.Le(12, 11)() is False
+
+    def test_gt(self):
+        """Test > equality."""
+        assert func.Gt(10, 11)() is False
+        assert func.Gt(11, 11)() is False
+        assert func.Gt(12, 11)() is True
+
+    def test_ge(self):
+        """Test > equality."""
+        assert func.Ge(10, 11)() is False
+        assert func.Ge(11, 11)() is True
+        assert func.Ge(12, 11)() is True
+
+    def test_in(self):
+        """Test containment."""
+        assert func.In("a", ["a", "b", "c"])() is True
+        assert func.In("b", ["a", "b", "c"])() is True
+        assert func.In("c", ["a", "b", "c"])() is True
+        assert func.In("x", ["a", "b", "c"])() is False
+
+    def test_concat(self):
+        """Test concatenation."""
+        assert func.Concat("a", "b", "c")() == "abc"
+
+    def test_hash(self):
+        """Test hashing."""
+        assert func.Hash("abc")() == 0.7054175881782409
+
+    def test_composition(self):
+        """Make sure functions can be composed."""
+        assert func.Hash(func.Concat("a", "b", "c"))() == 0.7054175881782409
+
+    def test_dunders(self):
+        """Test that expressions can be combined algebraically."""
+        assert repr(func.Hash("abc") < 0.75) == "Hash('abc') Lt 0.75"
+        assert (func.Hash("abc") < 0.75)() is True
+
+        assert repr(func.Hash("abc") <= 0.75) == "Hash('abc') Le 0.75"
+        assert (func.Hash("abc") <= 0.75)() is True
+
+        assert repr(func.Hash("abc") > 0.7) == "Not(Hash('abc') Le 0.7)"
+        assert (func.Hash("abc") > 0.7)() is True
+
+        assert repr(func.Hash("abc") >= 0.7) == "Not(Hash('abc') Lt 0.7)"
+        assert (func.Hash("abc") >= 0.7)() is True
+
+        assert repr(func.Hash("abc") == 0.7054175881782409) == "Hash('abc') Eq 0.7054175881782409"
+        assert (func.Hash("abc") == 0.7054175881782409)() is True
+
+        assert repr(func.Hash("abc") != 0.7) == "Not(Hash('abc') Eq 0.7)"
+        assert (func.Hash("abc") != 0.7)() is True
+
+        assert repr(func.Lt(10, 11).and_(func.Lt(1, 2))) == "(10 Lt 11) And (1 Lt 2)"
+        assert func.Lt(10, 11).and_(func.Lt(1, 2))() is True
+
+        assert repr(func.Lt(10, 11).or_(func.Lt(2, 1))) == "(10 Lt 11) Or (2 Lt 1)"
+        assert func.Lt(10, 11).or_(func.Lt(2, 1))() is True
+
+        assert repr(func.Literal([1, 2, 3]).has(1)) == "1 In [1, 2, 3]"
+        assert func.Literal([1, 2, 3]).has(1)() is True
