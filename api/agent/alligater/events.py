@@ -194,4 +194,3 @@ Attributes:
     args - The list of arguments
     result - The evaluation result
 """
-# TODO - the EvalFunc is not always fired yet.

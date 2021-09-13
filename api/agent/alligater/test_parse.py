@@ -244,6 +244,45 @@ FIXTURES = {
         """,
     },
 
+# Gate with a custom expression in the population
+'custom_expression': {
+    'feature': Feature(
+        name="custom_expression",
+        variants=[
+            Variant("a", "A"),
+            Variant("b", "B"),
+            Variant("off", None),
+            ],
+        default_arm=Arm("off"),
+        rollouts=[
+            Rollout(
+                name="test_segment_1",
+                population=Population.Expression(
+                    _Field("id").in_(["id_1", "id_2", "id_3", "id_4"]),
+                    ),
+                arms=[Arm("a", weight=1.0)],
+                ),
+            ],
+        ),
+    'yaml': """
+        feature:
+          name: custom_expression
+          variants:
+            a: 'A'
+            b: 'B'
+            "off": null
+          default_arm: "off"
+          rollouts:
+            - name: test_segment_1
+              population:
+                type: expression
+                value: $id In ["id_1", "id_2", "id_3", "id_4"]
+              arms:
+                - variant: a
+                  weight: 1.0
+        """,
+    },
+
 }
 
 

@@ -54,12 +54,13 @@ else:
 4. Flexible targetting. features can target multiple populations with arbitrarily complex logic, assigning treatments either randomly or explicitly.
 5. Stable assignments. Choices (even random ones) made by the gater are deterministic.
 6. Robust logging. Assignment choices can be inspected in detail with trace logging. The "state of the world" can also be logged as needed for experiment analysis.
+7. Targetting expressions can be written in a simple syntax in the YAML files, like `$language In ['en', 'es']`. This gives the YAML configs nearly as much flexibility as defining features in code.
 
 Read the class documentation for more info!
 
-## To-do:
+## To do
 
-It's mostly feature complete, but there are two notable limitations:
+The current implementation is essentially feature complete. This is a list of
+known limitations:
 
-- [ ] Expression can't fully be parsed from YAML configs yet.
-- [ ] Most Expressions don't currently emit `EvalFunc` trace events yet.
+- [ ] Expression DSL does not support Map types

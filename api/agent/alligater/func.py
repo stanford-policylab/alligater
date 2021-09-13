@@ -91,6 +91,22 @@ class _Expression(metaclass=_MetaExpression):
 
         return str(self) == str(other)
 
+    def _trace(self, log, args, result):
+        """Emit a EvalFunc trace event. If there is no logger passed, this is
+        a no-op.
+
+        Args:
+            log - Log function (can be None)
+            args - List of (evaluated) arguments used for evaluating this
+            expression.
+            result - Evaluation result
+        """
+        events.EvalFunc(log,
+                f=self.__class__.__name__,
+                args=args,
+                result=result)
+
+
 
 class _ComposedExpression(_Expression):
     """Composition operator, as g(f(x))."""
@@ -204,6 +220,9 @@ class Literal(_UnaryExpression):
 
     def __call__(self, *args, log=None):
         arg = self.evaluate(*args, log=log)
+
+        self._trace(log, [arg], arg)
+
         return arg
 
     def __repr__(self):
@@ -215,7 +234,11 @@ class Or(_InfixExpression):
 
     def __call__(self, *args, log=None):
         left, right = self.evaluate(*args, log=log)
-        return left or right
+        result = left or right
+
+        self._trace(log, [left, right], result)
+
+        return result
 
 
 class And(_InfixExpression):
@@ -223,7 +246,11 @@ class And(_InfixExpression):
 
     def __call__(self, *args, log=None):
         left, right = self.evaluate(*args, log=log)
-        return left and right
+        result = left and right
+
+        self._trace(log, [left, right], result)
+
+        return result
 
 
 class Not(_UnaryExpression):
@@ -231,7 +258,11 @@ class Not(_UnaryExpression):
 
     def __call__(self, *args, log=None):
         arg = self.evaluate(*args, log=log)
-        return not arg
+        result = not arg
+
+        self._trace(log, [arg], result)
+
+        return result
 
 
 class Eq(_InfixExpression):
@@ -239,7 +270,11 @@ class Eq(_InfixExpression):
 
     def __call__(self, *args, log=None):
         left, right = self.evaluate(*args, log=log)
-        return left == right
+        result = left == right
+
+        self._trace(log, [left, right], result)
+
+        return result
 
 
 Ne = Not[Eq]
@@ -251,7 +286,11 @@ class Lt(_InfixExpression):
 
     def __call__(self, *args, log=None):
         left, right = self.evaluate(*args, log=log)
-        return left < right
+        result = left < right
+
+        self._trace(log, [left, right], result)
+
+        return result
 
 
 class Le(_InfixExpression):
@@ -259,7 +298,11 @@ class Le(_InfixExpression):
 
     def __call__(self, *args, log=None):
         left, right = self.evaluate(*args, log=log)
-        return left <= right
+        result = left <= right
+
+        self._trace(log, [left, right], result)
+
+        return result
 
 
 Gt = Not[Le]
@@ -286,7 +329,7 @@ class In(_InfixExpression):
         else:
             result = left in right
 
-        events.EvalFunc(log, f=self.__class__.__name__, args=[left, right], result=result)
+        self._trace(log, [left, right], result)
 
         return result
 
@@ -296,7 +339,11 @@ class Concat(_NAryExpression):
 
     def __call__(self, *args, log=None):
         args = self.evaluate(*args, log=log)
-        return "".join([str(a) for a in args])
+        val = "".join([str(a) for a in args])
+
+        self._trace(log, args, val)
+
+        return val
 
 
 class Hash(_UnaryExpression):
@@ -306,6 +353,6 @@ class Hash(_UnaryExpression):
         arg = self.evaluate(*args, log=log)
         val = hash_id(str(arg))
 
-        events.EvalFunc(log, f=self.__class__.__name__, args=[arg], result=val)
+        self._trace(log, [arg], val)
 
         return val

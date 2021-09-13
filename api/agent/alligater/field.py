@@ -23,7 +23,7 @@ class _Field(_Expression):
         except Exception:
             pass
 
-        events.EvalFunc(log, f="Field", args=[entity, self.name], result=result)
+        self._trace(log, [entity, self.name], result)
 
         return result
 

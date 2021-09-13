@@ -11,6 +11,7 @@ from .rollout import Rollout
 from .arm import Arm
 from .variant import Variant
 from .field import _Field
+from .expr import parse as parse_expression
 
 
 
@@ -44,7 +45,7 @@ def _expand_variants(variants):
 
 
 def _expand_expression(expression):
-    """Parse an expression from YAML.
+    """Parse an expression from string. See `expr` for more info on syntax.
 
     Args:
         expression - Encoded expression
@@ -52,12 +53,7 @@ def _expand_expression(expression):
     Returns:
         Decoded _Expression
     """
-    if expression.startswith("$"):
-        field_name = expression[1:]
-        return _Field(field_name)
-
-    # TODO - expression parsing
-    raise NotImplemented("Full expression parsing not yet supported")
+    return parse_expression(expression)
 
 
 def _expand_population(population):
