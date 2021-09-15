@@ -1,3 +1,4 @@
+import requests
 import yaml
 try:
     from yaml import CLoader as Loader
@@ -205,6 +206,12 @@ def _expand_feature(feature, default_feature=None):
     if 'default_arm' in feature:
         result['default_arm'] = _expand_default_arm(feature['default_arm'])
 
+    # `type` is extraneous, remove it
+    if 'type' in result:
+        del result['type']
+
+    print("THIS IS WHAT IM TRYING", result)
+
     name = result.pop('name')
     return Feature(name, **result)
 
@@ -234,7 +241,7 @@ def _parse_feature_yaml_str(s, default_features=None):
     return result
 
 
-def parse_yaml(path, default_features=None):
+def parse_yaml(s, default_features=None):
     """Load features from the given YAML config.
 
     The default definitions of these features can be given in
@@ -242,7 +249,7 @@ def parse_yaml(path, default_features=None):
     default implementation.
 
     Args:
-        path - Path to the YAML config
+        s - YAML config as a string
         default_features - A dictionary containing the default feature
         definitions by name.
 
@@ -254,11 +261,36 @@ def parse_yaml(path, default_features=None):
         was not specified.
     """
     try:
-        with open(path) as f:
-            return _parse_feature_yaml_str(f.read(), default_features=default_features)
+        return _parse_feature_yaml_str(s, default_features=default_features)
     except Exception as e:
         if default_features is None:
             raise InvalidConfigError(str(e))
         else:
             print("[WARNING] Failed to load features from YAML: {}".format(e))
             return default_features
+
+
+def load_config(path, username=None, password=None):
+    """Load the string contents of a given path.
+
+    Path can be either a local file or a remote URL.
+
+    Args:
+        path - Local file path or remote URL.
+        username - Basic auth username for remote URLs
+        password - Basic auth password for remote URLs
+
+    Returns:
+        String contents of the path.
+    """
+    # Load from a remote path if given something that looks like a URL
+    if path.startswith("http://") or path.startswith("https://"):
+        auth = (username, password) if username else None
+        r = requests.get(path, auth=auth)
+        if r.status_code != 200:
+            raise RuntimeError("Failed to load config. Got status {}".format(r.status_code))
+        return r.text
+    else:
+        # Assume it was a local file path
+        with open(path) as f:
+            return f.read()

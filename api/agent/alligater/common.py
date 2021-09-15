@@ -39,3 +39,8 @@ class ValidationError(Exception):
 class InvalidConfigError(Exception):
     """Error thrown when YAML config can't be loaded."""
     pass
+
+
+class MissingFeatureError(Exception):
+    """Error thrown when trying to access an undefined feature."""
+    pass

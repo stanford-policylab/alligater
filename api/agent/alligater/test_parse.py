@@ -330,7 +330,7 @@ FIXTURES = {
 class TestParse(unittest.TestCase):
 
     def assert_feature(self, name, objs):
-        parsed = parse._parse_feature_yaml_str(objs['yaml'])
+        parsed = parse.parse_yaml(objs['yaml'])
         expected = objs['feature']
         actual = parsed[expected.name]
         assert expected == actual, "Expected:\n{}\n\nActual:\n{}\n".format(expected.to_dict(), actual.to_dict())
