@@ -6,6 +6,7 @@ from .arm import Arm
 from .rollout import Rollout
 from .population import Population
 from .field import _Field
+from .func import Hash
 import alligater.parse as parse
 
 
@@ -90,6 +91,45 @@ FIXTURES = {
                   weight: 0.75
         """,
     },
+
+# A/B with custom rollout randomizer
+'full_ab': {
+    'feature': Feature(
+        'ab_feature_custom_randomizer',
+        variants=[
+            Variant('a', "This is the value for 'a'"),
+            Variant('b', "This is the value for 'b'"),
+            ],
+        rollouts=[
+            Rollout(
+                name="default",
+                population=Population.DEFAULT,
+                arms=[
+                    Arm("a", 0.25),
+                    Arm("b", 0.75),
+                    ],
+                randomizer=Hash(_Field("custom")),
+                ),
+            ],
+        ),
+    'yaml': """
+        feature:
+          name: ab_feature_custom_randomizer
+          variants:
+            a: This is the value for 'a'
+            b: This is the value for 'b'
+          rollouts:
+            - name: default
+              population: default
+              arms:
+                - variant: a
+                  weight: 0.25
+                - variant: b
+                  weight: 0.75
+              randomizer: Hash($custom)
+        """,
+    },
+
 
 # Gate with multiple rollouts and populations. The second rollout is implied
 # from the `default_arm` setting.

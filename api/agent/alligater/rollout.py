@@ -26,7 +26,7 @@ class Rollout:
             name=DEFAULT,
             population=Population.DEFAULT,
             arms=None,
-            randomize_by=DEFAULT_RANDOMIZER):
+            randomizer=DEFAULT_RANDOMIZER):
         """Construct a new Rollout.
 
         Args:
@@ -38,13 +38,13 @@ class Rollout:
             weights are missing from the Arms they will be assigned
             automatically by splitting the available space evenly among
             all unspecified arms.
-            randomize_by - Expression to use to randomize treatment assignment.
+            randomizer - Expression to use to randomize treatment assignment.
             By default this randomizes using the `id` attribute of the input.
         """
         self.name = name
         self.population = self._get_population(population)
         self.arms = self._get_arms(arms)
-        self.randomize = self._get_randomizer(randomize_by)
+        self.randomize = self._get_randomizer(randomizer)
 
     def _get_population(self, population):
         """Get the full population configuration.

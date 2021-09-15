@@ -6,6 +6,7 @@ from .variant import Variant
 from .population import Population
 from .arm import Arm
 from .field import _Field
+from .func import Hash
 
 
 
@@ -133,3 +134,33 @@ class TestFeature(unittest.TestCase):
         assert f({"custom": "other"}) is None
         # When the attribute returns a list, the `in` test uses ANY semantics.
         assert f({"custom": ["other", "id_2"]}) == 'A'
+
+    def test_custom_rollout_randomizer(self):
+        """Rollout should allow a custom randomization function."""
+        f = Feature(
+            name="custom_randomizer",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
+                ],
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    arms=["a", "b"],
+                    randomizer=Hash(_Field("custom")),
+                    ),
+                ],
+            )
+
+        # Hash 0.2033181243131095
+        assert f({"custom": "id_1"}, log=print) == 'A'
+        # Hash 0.5798682197431677
+        assert f({"custom": "id_2"}, log=print) == 'B'
+        # Hash 0.2249997700321562
+        assert f({"custom": "id_3"}, log=print) == 'A'
+        # Hash 0.33751095065789694
+        assert f({"custom": "id_4"}, log=print) == 'A'
+        # Hash 0.8204519266698527
+        assert f({"custom": "id_5"}, log=print) == 'B'

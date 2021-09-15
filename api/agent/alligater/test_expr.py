@@ -77,9 +77,9 @@ class TestExpr(unittest.TestCase):
     def test_inverse(self):
         """Test that str reps of parses are also parsable."""
         def t(exp, s):
-            assert exp.equivalent(parse(str(exp)))
             assert str(exp) == s
             assert exp.equivalent(parse(s))
+            assert parse(s).equivalent(exp)
 
         t(Literal(1), "1")
         t(Literal("foo"), "'foo'")

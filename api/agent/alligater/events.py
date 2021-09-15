@@ -187,7 +187,9 @@ Attributes:
 
 
 EvalFunc = _Event("EvalFunc", ("f", "args", "result"))
-"""EvalFunc is fired when a Variant is evaluated.
+"""EvalFunc is fired when an Expression is being evaluated.
+
+This is fired once for every operation in the expression tree.
 
 Attributes:
     f - The name of the function being evaluated

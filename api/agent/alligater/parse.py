@@ -156,6 +156,9 @@ def _expand_rollouts(rollouts):
         if 'arms' in args:
             args['arms'] = _expand_arms(args['arms'])
 
+        if 'randomizer' in args:
+            args['randomizer'] = _expand_expression(args['randomizer'])
+
         result.append(Rollout(**args))
 
     return result

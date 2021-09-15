@@ -39,13 +39,13 @@ class ExprCompiler(GramListener):
 
     def __init__(self, debug=False):
         super().__init__()
+        # The ops/args dicts store for each context a function to be called
+        # to produce some object in the language (see `func` and `field`).
+        # Values get popped as they are evaluated. (This is secretly a stack.)
         self.operators = {}
         self.arguments = {}
         self.root = None
         self.debug = debug
-
-    def enterAttribute(self, ctx):
-        print(ctx)
 
     def enterParens(self, ctx):
         op = func.Not if ctx.NOT() else IDENT
@@ -177,10 +177,17 @@ class ExprCompiler(GramListener):
             else:
                 self.arguments[ctx.parentCtx].append(value)
         else:
+            # Check that there aren't any orphaned parents.
+            if not self.debug and (len(self.operators) or len(self.arguments)):
+                raise SyntaxError("There was an error parsing the expression")
             if isinstance(value, _Args):
-                # _Args should only be used in the context of a function call,
-                # but check just in case.
-                raise ValueError("Unexpected top-level function args")
+                # There's no way _Args can ever be parsed as a top-level
+                # context, so if this happens it's probably due to a bug in
+                # the implementation of this class. (E.g., the enter method for
+                # the parent context is not properly registering itself on the
+                # stack, or the exit method is popping it before it's finished
+                # processing its children.)
+                raise RuntimeError("Unexpected top-level function args")
             elif not isinstance(value, func._Expression):
                 # If the result was a literal value, wrap it.
                 self.root = func.Literal(value)
