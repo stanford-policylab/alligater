@@ -51,6 +51,8 @@ class Alligater:
             logger - Function to call to log decisions. See `events` for more
             information about how to interpret gating decisions.
             reload_interval - Number of seconds between checking for YAML changes
+            loader_kwargs - Arguments to pass to the config loader. See the
+            method in `parse.py` for details.
         """
 
         if type(features) is list:

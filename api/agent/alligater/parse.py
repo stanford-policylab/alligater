@@ -276,23 +276,25 @@ def parse_yaml(s, default_features=None):
             return default_features
 
 
-def load_config(path, username=None, password=None):
+def load_config(path, authorization=None):
     """Load the string contents of a given path.
 
     Path can be either a local file or a remote URL.
 
     Args:
         path - Local file path or remote URL.
-        username - Basic auth username for remote URLs
-        password - Basic auth password for remote URLs
+        authorization - Value to use for `Authorization` header, e.g.:
+                        "Bearer my.access.token"
 
     Returns:
         String contents of the path.
     """
     # Load from a remote path if given something that looks like a URL
     if path.startswith("http://") or path.startswith("https://"):
-        auth = (username, password) if username else None
-        r = requests.get(path, auth=auth)
+        headers = {}
+        if authorization:
+            headers['Authorization'] = authorization
+        r = requests.get(path, headers=headers)
         if r.status_code != 200:
             raise RuntimeError("Failed to load config. Got status {}".format(r.status_code))
         return r.text
