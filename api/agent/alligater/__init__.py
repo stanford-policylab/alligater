@@ -64,6 +64,8 @@ class Alligater:
         self._yaml = yaml
         # Current list of features
         self._features = features.copy() if features else {}
+        # Original hard-coded list of features
+        self._original_features = features.copy() if features else {}
         # Checksum of the currently loaded YAML config
         self._old_sum = ""
         # Number of seconds to wait between reloads
@@ -140,7 +142,14 @@ class Alligater:
                 new_sum = self._checksum(yaml_str)
                 if new_sum != self._old_sum:
                     with self._mtx:
-                        self._features = parse_yaml(yaml_str, default_features=self._features)
+                        # NOTE: When features are reloaded, they are **not**
+                        # merged with the _current_ list of features, they are
+                        # always merged with the original hardcoded list. This
+                        # results in more predictable behavior -- if we always
+                        # merged with the current list, transient mistakes in
+                        # a config could propagate forever.
+                        self._features = parse_yaml(yaml_str,
+                                default_features=self._original_features)
                         self._old_sum = new_sum
             except Exception as e:
                 print("[Warning] Alligater loader encountered an error:", e)

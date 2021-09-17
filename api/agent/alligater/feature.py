@@ -63,13 +63,12 @@ class Feature:
             if default_arm.weight is None:
                 default_arm.weight = 1.0
 
-            self.rollouts.append(
-                    Rollout(
-                        name=Rollout.DEFAULT,
-                        population=Population.DEFAULT,
-                        arms=[default_arm],
-                        ),
+            default_rollout = Rollout(
+                    name=Rollout.DEFAULT,
+                    population=Population.DEFAULT,
+                    arms=[default_arm],
                     )
+            self.rollouts.append(default_rollout)
 
         # Make sure the configuration actually makes sense.
         self.validate()

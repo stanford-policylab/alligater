@@ -339,3 +339,15 @@ class TestParse(unittest.TestCase):
         for k, v in FIXTURES.items():
             self.assert_feature(k, v)
 
+    def test_merge(self):
+        parsed = parse.parse_yaml(FIXTURES['simple']['yaml'], default_features={
+            'simplest_feature': Feature(
+                'simplest_feature',
+                variants=[Variant('bar', 'This will be overridden')],
+                default_arm=Arm('bar'),
+                ),
+            })
+
+        actual = parsed['simplest_feature']
+        expected = FIXTURES['simple']['feature']
+        assert expected == actual, "Expected:\n{}\n\nActual:\n{}\n".format(expected.to_dict(), actual.to_dict())

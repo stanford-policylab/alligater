@@ -197,7 +197,7 @@ class Rollout:
                 'arms': [a.to_dict() for a in self.arms],
                 'population': self.population.to_dict(),
                 'randomizer': self.randomize,
-                },
+                }
 
     def __call__(self, entity, log=None):
         """Apply this rollout to the given entity.

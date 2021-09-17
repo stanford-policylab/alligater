@@ -1,3 +1,5 @@
+import traceback
+
 import requests
 import yaml
 try:
@@ -200,17 +202,20 @@ def _expand_feature(feature, default_feature=None):
     if 'variants' in feature:
         result['variants'] = _expand_variants(feature['variants'])
 
-    if 'rollouts' in feature:
-        result['rollouts'] = _expand_rollouts(feature['rollouts'])
-
     if 'default_arm' in feature:
         result['default_arm'] = _expand_default_arm(feature['default_arm'])
+        # If the new YAML specifies a default arm, make sure to clear out the
+        # any default rollout specified in the original feature.
+        if 'rollouts' in result:
+            result['rollouts'] = [r for r in result['rollouts']
+                    if r['name'] != Rollout.DEFAULT]
+
+    if 'rollouts' in feature:
+        result['rollouts'] = _expand_rollouts(feature['rollouts'])
 
     # `type` is extraneous, remove it
     if 'type' in result:
         del result['type']
-
-    print("THIS IS WHAT IM TRYING", result)
 
     name = result.pop('name')
     return Feature(name, **result)
@@ -267,6 +272,7 @@ def parse_yaml(s, default_features=None):
             raise InvalidConfigError(str(e))
         else:
             print("[WARNING] Failed to load features from YAML: {}".format(e))
+            traceback.print_exc()
             return default_features
 
 
