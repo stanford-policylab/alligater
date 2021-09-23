@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import dataclass
 
 from .feature import Feature
 from .rollout import Rollout
@@ -10,10 +11,9 @@ from .func import Hash
 
 
 
+@dataclass
 class User:
-
-    def __init__(self, id_):
-        self.id = id_
+    id: str
 
 
 class TestFeature(unittest.TestCase):

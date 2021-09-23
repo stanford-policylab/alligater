@@ -1,14 +1,14 @@
 import unittest
+from dataclasses import dataclass
 
 import alligater.func as func
 import alligater.field as field
 
 
 
+@dataclass
 class User:
-
-    def __init__(self, id_):
-        self.id = id_
+    id: str
 
 
 class TestField(unittest.TestCase):
