@@ -20,6 +20,7 @@ class TestFunc(unittest.TestCase):
         assert repr(func.In) == 'In'
         assert repr(func.Concat) == 'Concat'
         assert repr(func.Hash) == 'Hash'
+        assert repr(func.Len) == 'Len'
 
     def test_expr_repr(self):
         """Test the representations of expressions."""
@@ -140,6 +141,13 @@ class TestFunc(unittest.TestCase):
     def test_hash(self):
         """Test hashing."""
         assert func.Hash("abc")() == 0.7054175881782409
+
+    def test_len(self):
+        """Test length."""
+        assert func.Len([1, 2, 3]) == 3
+        assert func.Len("abc") == 3
+        assert func.Len(("a", "b",)) == 2
+        assert func.Len({"a": 1, "b": 2, "c": 3}) == 3
 
     def test_composition(self):
         """Make sure functions can be composed."""

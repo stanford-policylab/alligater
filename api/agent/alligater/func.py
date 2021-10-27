@@ -356,3 +356,15 @@ class Hash(_UnaryExpression):
         self._trace(log, [arg], val)
 
         return val
+
+
+class Len(_UnaryExpression):
+    """Get length of an iterable."""
+
+    def __call__(self, *args, log=None):
+        arg = self.evaluate(*args, log=log)
+        val = len(arg)
+
+        self._trace(log, [arg], val)
+
+        return val
