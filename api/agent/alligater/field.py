@@ -1,4 +1,5 @@
 from .func import _Expression
+from .common import get_entity_field
 import alligater.events as events
 
 
@@ -11,17 +12,7 @@ class _Field(_Expression):
 
     def __call__(self, *args, log=None, call_id=None):
         entity = args[0]
-        result = None
-
-        try:
-            result = getattr(entity, self.name)
-        except AttributeError:
-            try:
-                result = entity[self.name]
-            except Exception:
-                pass
-        except Exception:
-            pass
+        result = get_entity_field(entity, self.name)
 
         self._trace(call_id, log, [entity, self.name], result)
 

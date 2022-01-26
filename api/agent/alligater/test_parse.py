@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 
 from .feature import Feature
 from .variant import Variant
@@ -323,6 +324,44 @@ FIXTURES = {
         """,
     },
 
+# Gate with time fields in the rollout
+'time_range': {
+    'feature': Feature(
+        name="time_range",
+        variants=[
+            Variant("a", "A"),
+            Variant("b", "B"),
+            Variant("off", None),
+            ],
+        default_arm=Arm("off"),
+        rollouts=[
+            Rollout(
+                name="test_segment_1",
+                arms=["a", "b"],
+                after=datetime(2021, 1, 3),
+                until=datetime(2021, 1, 10),
+                time_key='custom_time_field',
+                ),
+            ],
+        ),
+    'yaml': """
+        feature:
+          name: time_range
+          variants:
+            a: 'A'
+            b: 'B'
+            "off": null
+          default_arm: "off"
+          rollouts:
+            - name: test_segment_1
+              arms:
+                - a
+                - b
+              after: "2021-01-03"
+              until: 2021-01-10
+              time_key: custom_time_field
+        """,
+    },
 }
 
 

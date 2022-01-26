@@ -144,6 +144,19 @@ Attributes:
 """
 
 
+CheckTime = _Event("CheckTime", ("entity", "time_key", "time", "after", "until", "result"))
+"""CheckTime is fired when a time range is being evaluated.
+
+Attributes:
+    entity - The entity being evaluated
+    time_key - The time key of the entity
+    time - The resolved time
+    before - Earliest allowable time
+    after - Latest allowable time
+    result - Whether time was in range
+"""
+
+
 Randomize = _Event("Randomize", ("entity", "function", "result"))
 """Randomize is fired when a coin is being flipped.
 

@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from dataclasses import dataclass
 
 from .feature import Feature
@@ -164,3 +165,104 @@ class TestFeature(unittest.TestCase):
         assert f({"custom": "id_4"}, log=print) == 'A'
         # Hash 0.8204519266698527
         assert f({"custom": "id_5"}, log=print) == 'B'
+
+    def test_rollout_start_time(self):
+        """Rollout should be able to have a custom start time."""
+        f = Feature(
+            name="custom_start_time",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
+                ],
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    arms=["a", "b"],
+                    after=datetime(2021, 1, 1),
+                    ),
+                ],
+            )
+
+        # Hash 0.2033181243131095
+        assert f({"id": "id_1", "entry_time": datetime(2020, 12, 30)}, log=print) == None
+        assert f({"id": "id_1", "entry_time": datetime(2021, 1, 2)}, log=print) == 'A'
+        assert f({"id": "id_1"}, log=print) == None
+
+    def test_rollout_end_time(self):
+        """Rollout should be able to have a custom end time."""
+        f = Feature(
+            name="custom_end_time",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
+                ],
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    arms=["a", "b"],
+                    until=datetime(2021, 1, 10),
+                    ),
+                ],
+            )
+
+        # Hash 0.2033181243131095
+        assert f({"id": "id_1", "entry_time": datetime(2021, 1, 5)}, log=print) == 'A'
+        assert f({"id": "id_1", "entry_time": datetime(2021, 2, 2)}, log=print) == None
+        assert f({"id": "id_1"}, log=print) == None
+
+    def test_rollout_time_range(self):
+        """Rollout should be able to have a full custom time range."""
+        f = Feature(
+            name="custom_time_range",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
+                ],
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    arms=["a", "b"],
+                    after=datetime(2021, 1, 3),
+                    until=datetime(2021, 1, 10),
+                    ),
+                ],
+            )
+
+        # Hash 0.2033181243131095
+        assert f({"id": "id_1", "entry_time": datetime(2021, 1, 1)}, log=print) == None
+        assert f({"id": "id_1", "entry_time": datetime(2021, 2, 2)}, log=print) == None
+        assert f({"id": "id_1", "entry_time": datetime(2021, 1, 5)}, log=print) == 'A'
+        assert f({"id": "id_1"}, log=print) == None
+
+    def test_rollout_custom_time_field(self):
+        """Rollout should be able to have a custom time field."""
+        f = Feature(
+            name="custom_time_field",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
+                ],
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    arms=["a", "b"],
+                    after=datetime(2021, 1, 3),
+                    until=datetime(2021, 1, 10),
+                    time_key='custom_time_field',
+                    ),
+                ],
+            )
+
+        # Hash 0.2033181243131095
+        assert f({"id": "id_1", "custom_time_field": datetime(2021, 1, 1)}, log=print) == None
+        assert f({"id": "id_1", "custom_time_field": datetime(2021, 2, 2)}, log=print) == None
+        assert f({"id": "id_1", "custom_time_field": datetime(2021, 1, 5)}, log=print) == 'A'
+        assert f({"id": "id_1"}, log=print) == None

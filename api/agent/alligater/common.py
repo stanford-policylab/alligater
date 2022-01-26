@@ -42,6 +42,31 @@ def is_non_string_iterable(c):
     return isinstance(c, collections.abc.Iterable) and not isinstance(c, str)
 
 
+def get_entity_field(entity, field_name):
+    """Quietly get a field from an entity.
+
+    Entity can either use dot property access or brackets as a dict.
+
+    Args:
+        entity - Entity to evaluate
+        field_name - Name of field to get
+
+    Returns:
+        Value of field if found, otherwise None
+    """
+    result = None
+    try:
+        result = getattr(entity, field_name)
+    except AttributeError:
+        try:
+            result = entity[field_name]
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return result
+
+
 def simple_object(value):
     """Try to simplify an arbitrary object to a simple object.
 
