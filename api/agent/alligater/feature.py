@@ -1,3 +1,5 @@
+import uuid
+
 from .common import ValidationError
 from .rollout import Rollout
 from .population import Population
@@ -117,38 +119,44 @@ class Feature:
                 'rollouts': [r.to_dict() for r in self.rollouts],
                 }
 
-    def __call__(self, entity, log=None, nested=False):
+    def __call__(self, entity, log=None, call_id=None):
         """Apply the gate to the given entity.
 
         Args:
             entity - the entity to gate
             log - logging function
 
+        Internal Args:
+            call_id - the ID of the feature invocation that this call is
+                      nested within. This is None if the call is not nested.
+
         Returns:
             Variant that the entity should receive
         """
+        nested = call_id is not None
         if not nested:
-            events.EnterGate(log, feature=self, entity=entity)
+            call_id = str(uuid.uuid4())
+            events.EnterGate(log, feature=self, entity=entity, call_id=call_id)
 
-        events.EnterFeature(log, feature=self, entity=entity)
+        events.EnterFeature(log, feature=self, entity=entity, call_id=call_id)
 
         for i, r in enumerate(self.rollouts):
-            variant_name = r(entity, log=log)
+            variant_name = r(call_id, entity, log=log)
             if variant_name:
                 variant = self.variants[variant_name]
 
-                events.ChoseVariant(log, variant=variant)
-                value = variant(entity, log=log)
+                events.ChoseVariant(log, variant=variant, call_id=call_id)
+                value = variant(call_id, entity, log=log)
 
-                events.LeaveFeature(log, value=value)
+                events.LeaveFeature(log, value=value, call_id=call_id)
                 if not nested:
-                    events.LeaveGate(log, value=value)
+                    events.LeaveGate(log, value=value, call_id=call_id)
 
                 return value
 
-        events.Error(log, message="no variant found")
-        events.LeaveFeature(log, value=None)
+        events.Error(log, message="no variant found", call_id=call_id)
+        events.LeaveFeature(log, value=None, call_id=call_id)
         if not nested:
-            events.LeaveGate(log, value=None)
+            events.LeaveGate(log, value=None, call_id=call_id)
 
         raise RuntimeError("No variant found")

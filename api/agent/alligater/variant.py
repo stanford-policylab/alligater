@@ -78,7 +78,7 @@ class Variant:
                 'nested': self.is_nested,
                 }
 
-    def __call__(self, entity, log=None):
+    def __call__(self, call_id, entity, log=None):
         """Get the value for this variant.
 
         If the value is a Feature (or a `functor`), it will be called with
@@ -91,11 +91,11 @@ class Variant:
         Returns:
             Could be anything.
         """
-        events.EnterVariant(log, variant=self)
+        events.EnterVariant(log, variant=self, call_id=call_id)
 
         if self.is_nested:
-            events.VariantRecurse(log, inner=self._value)
-            return self._value(entity, log=log, nested=True)
+            events.VariantRecurse(log, inner=self._value, call_id=call_id)
+            return self._value(entity, log=log, call_id=call_id)
 
-        events.LeaveVariant(log, value=self._value)
+        events.LeaveVariant(log, value=self._value, call_id=call_id)
         return self._value

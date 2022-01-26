@@ -12,16 +12,17 @@ class DefaultSelector:
         """Ensures configuration is correct. (It is.)"""
         pass
 
-    def __call__(self, entity, log=None):
+    def __call__(self, call_id, entity, log=None):
         """Returns True -- everyone is in the default population!
 
         Args:
+            call_id - ID of the exposure evaluation call
             entity - Entity to test
 
         Returns:
             Always True
         """
-        events.EvaluatePopulation(log, population=self, entity=entity, member=True)
+        events.EvaluatePopulation(log, population=self, entity=entity, member=True, call_id=call_id)
         return True
 
     def __eq__(self, other):
@@ -59,17 +60,18 @@ class ExpressionSelector:
         """
         self.expression.validate()
 
-    def __call__(self, entity, log=None):
+    def __call__(self, call_id, entity, log=None):
         """Check whether entity belongs to a this population.
 
         Args:
+            call_id - ID of the exposure evaluation call
             entity - The entity to test
 
         Returns:
             True or False indicating membership in this population.
         """
-        result = self.expression(entity, log=log)
-        events.EvaluatePopulation(log, population=self, entity=entity, member=result)
+        result = self.expression(entity, log=log, call_id=call_id)
+        events.EvaluatePopulation(log, population=self, entity=entity, member=result, call_id=call_id)
         return result
 
     def __eq__(self, other):
@@ -85,7 +87,7 @@ class ExpressionSelector:
         return {
                 'type': 'Population',
                 'name': 'Expression',
-                'expression': self.expression,
+                'expression': str(self.expression),
                 }
 
 

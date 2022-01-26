@@ -1,4 +1,4 @@
-from .common import ValidationError
+from .common import ValidationError, simple_object
 
 
 
@@ -28,13 +28,45 @@ class _EventInstance:
     def __eq__(self, other):
         return self.name == repr(other)
 
+    def asdict(self, exclude=None, compress=False):
+        """Convert object to a simple dictionary.
+
+        Args:
+            exclude - Optional dictionary of redundant fields to exclude
+            compress - When serializing, if a key in the data has a `name`
+            field, just use that instead of including the whole object. This
+            will prevent objects from being excluded entirely, if the `exclude`
+            option is also set.
+
+        Returns:
+            Dictionary of values
+        """
+        d = {
+                'type': self.name,
+                'data': {},
+                }
+
+        for k, v in self.args.items():
+            vd = simple_object(v)
+
+            if type(vd) == dict and 'name' in vd:
+                vd = vd['name']
+            elif exclude and k in exclude and exclude[k] == vd:
+                continue
+
+            d['data'][k] = vd
+
+        return d
+
 
 class _Event:
     """An abstract event for building loggers."""
 
     def __init__(self, name, slots=None):
         self.name = name
-        self.slots = slots or []
+        slots = list(slots or [])
+        slots.append('call_id')
+        self.slots = tuple(slots)
 
     def __call__(self, log, **kwargs):
         if not log:

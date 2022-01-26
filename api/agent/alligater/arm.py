@@ -51,5 +51,3 @@ class Arm:
             raise ValidationError("Arm weight must be positive")
         if self.weight > 1.0:
             raise ValidationError("Arm weight can't be greater than 1.0")
-
-

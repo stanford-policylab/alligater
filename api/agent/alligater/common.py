@@ -1,3 +1,5 @@
+import collections.abc
+import dataclasses
 import mmh3
 
 
@@ -29,6 +31,39 @@ def hash_id(s):
     # this blog post:
     # https://www.rolando.cl/blog/2018/12/how_uniform_is_md5.html
     return mmh3.hash64(s, signed=False)[0] / MAX_DOUBLE
+
+
+def is_non_string_iterable(c):
+    """Check if this is a collection (but not a string).
+
+    Args:
+        c - anything
+    """
+    return isinstance(c, collections.abc.Iterable) and not isinstance(c, str)
+
+
+def simple_object(value):
+    """Try to simplify an arbitrary object to a simple object.
+
+    Args:
+        value - Value to simplify
+
+    Returns:
+        Hopefully a simple JSON-type object.
+    """
+    if is_non_string_iterable(value):
+        return [simple_object(v) for v in value]
+    if dataclasses.is_dataclass(value):
+        return dataclasses.asdict(value)
+    if hasattr(value, 'asdict'):
+        return value.asdict()
+    elif hasattr(value, 'to_dict'):
+        return value.to_dict()
+    elif hasattr(value, 'to_json'):
+        return value.to_json()
+    else:
+        # Give up :(
+        return value
 
 
 class ValidationError(Exception):

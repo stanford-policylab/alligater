@@ -9,7 +9,7 @@ class _Field(_Expression):
     def __init__(self, name):
         self.name = name
 
-    def __call__(self, *args, log=None):
+    def __call__(self, *args, log=None, call_id=None):
         entity = args[0]
         result = None
 
@@ -23,7 +23,7 @@ class _Field(_Expression):
         except Exception:
             pass
 
-        self._trace(log, [entity, self.name], result)
+        self._trace(call_id, log, [entity, self.name], result)
 
         return result
 

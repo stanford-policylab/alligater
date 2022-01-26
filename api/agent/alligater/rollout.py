@@ -196,10 +196,10 @@ class Rollout:
                 'name': self.name,
                 'arms': [a.to_dict() for a in self.arms],
                 'population': self.population.to_dict(),
-                'randomizer': self.randomize,
+                'randomizer': str(self.randomize),
                 }
 
-    def __call__(self, entity, log=None):
+    def __call__(self, call_id, entity, log=None):
         """Apply this rollout to the given entity.
 
         Args:
@@ -208,25 +208,25 @@ class Rollout:
         Returns:
             A variant name if one should be applied; otherwise None.
         """
-        events.EnterRollout(log, rollout=self)
+        events.EnterRollout(log, rollout=self, call_id=call_id)
 
-        if not self.population(entity, log=log):
-            events.LeaveRollout(log, member=False)
+        if not self.population(call_id, entity, log=log):
+            events.LeaveRollout(log, member=False, call_id=call_id)
             return None
 
-        x = self.randomize(entity, log=log)
+        x = self.randomize(entity, log=log, call_id=call_id)
 
-        events.Randomize(log, entity=entity, function=self.randomize, result=x)
+        events.Randomize(log, entity=entity, function=self.randomize, result=x, call_id=call_id)
 
         cutoff = 0.0
         for arm in self.arms:
             cutoff += arm.weight
-            events.EnterArm(log, arm=arm, cutoff=cutoff, x=x)
+            events.EnterArm(log, arm=arm, cutoff=cutoff, x=x, call_id=call_id)
             if x <= cutoff:
-                events.LeaveArm(log, matched=True)
-                events.LeaveRollout(log, member=True)
+                events.LeaveArm(log, matched=True, call_id=call_id)
+                events.LeaveRollout(log, member=True, call_id=call_id)
                 return arm.variant_name
-            events.LeaveArm(log, matched=False)
+            events.LeaveArm(log, matched=False, call_id=call_id)
 
         # This would only happen if something was tinkered with after validation
         raise RuntimeError("Could not find arm for entity")
