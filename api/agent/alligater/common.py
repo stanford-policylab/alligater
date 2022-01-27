@@ -1,6 +1,8 @@
 import collections.abc
 import dataclasses
+import json
 import mmh3
+from datetime import datetime, date
 
 
 
@@ -67,28 +69,66 @@ def get_entity_field(entity, field_name):
     return result
 
 
-def simple_object(value):
+def simple_object(value, with_type=False):
     """Try to simplify an arbitrary object to a simple object.
 
     Args:
         value - Value to simplify
+        with_type - Include type information in the object
 
     Returns:
         Hopefully a simple JSON-type object.
     """
     if is_non_string_iterable(value):
         return [simple_object(v) for v in value]
+
+    d = {}
+
     if dataclasses.is_dataclass(value):
-        return dataclasses.asdict(value)
-    if hasattr(value, 'asdict'):
-        return value.asdict()
+        d = dataclasses.asdict(value)
+    elif hasattr(value, 'asdict'):
+        d = value.asdict()
     elif hasattr(value, 'to_dict'):
-        return value.to_dict()
+        d = value.to_dict()
     elif hasattr(value, 'to_json'):
-        return value.to_json()
+        d = value.to_json()
     else:
-        # Give up :(
-        return value
+        d = json.loads(encode_json(value))
+
+    if not with_type:
+        return d
+    return {
+            "type": type(value).__name__,
+            "value": d,
+            }
+
+
+def _json_default_encoder(obj):
+    """Default serializer to user with json.dumps.
+
+    Args:
+        obj - anything
+
+    Returns:
+        A simple JSON type
+    """
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    return str(obj)
+
+
+def encode_json(data):
+    """Encode object as json.
+
+    Calls json.dumps with a good serializer.
+
+    Args:
+        data - Arbitrary object.
+
+    Returns:
+        Encoded string
+    """
+    return json.dumps(data, sort_keys=True, default=_json_default_encoder)
 
 
 class ValidationError(Exception):

@@ -1,23 +1,41 @@
 import unittest
 import threading
 import time
+import responses
+import json
 from unittest.mock import patch
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
-from .log import ObjectLogger
+from .log import ObjectLogger, NetworkLogger
 from .feature import Feature
 from .variant import Variant
 
 
 
-fake_now = datetime(2022, 1, 29, 12, 11, 10, 0)
+fake_now = datetime(2022, 1, 29, 12, 11, 10, 0, tzinfo=timezone.utc)
 mock_now = lambda: fake_now
+
+mock_url = "https://test.glen/graphql"
 
 
 @dataclass
 class User:
     id: str
+
+
+def wait_for_responses(logger, timeout=1., expected_count=1):
+    """Test helper to wait for an NetworkLogger to write something."""
+    d = timeout / 4.
+    t = 0.
+    with logger._cv:
+        while True:
+            assert t < timeout, "Timeout waiting for write"
+            if len(responses.calls) < expected_count:
+                logger._cv.wait(timeout=d)
+                t += d
+            else:
+                return
 
 
 class MockWriter:
@@ -58,7 +76,10 @@ class TestObjectLogger(unittest.TestCase):
             'ts': fake_now,
             'call_id': 'fakeuuid',
             'entity': {
-                'id': 'one',
+                'type': 'User',
+                'value': {
+                    'id': 'one',
+                    },
                 },
             'feature': {
                 'name': 'test_feature',
@@ -86,6 +107,7 @@ class TestObjectLogger(unittest.TestCase):
                         },
                     },
                 },
+            'variant': {'name': 'foo', 'nested': False, 'type': 'Variant', 'value': 'Foo'},
             'assignment': 'Foo',
             'trace': None,
             }])
@@ -105,7 +127,10 @@ class TestObjectLogger(unittest.TestCase):
             'ts': fake_now,
             'call_id': 'fakeuuid',
             'entity': {
-                'id': 'two',
+                'type': 'User',
+                'value': {
+                    'id': 'two',
+                    },
                 },
             'feature': {
                 'name': 'test_feature',
@@ -133,6 +158,7 @@ class TestObjectLogger(unittest.TestCase):
                         },
                     },
                 },
+            'variant': {'name': 'foo', 'nested': False, 'type': 'Variant', 'value': 'Foo'},
             'assignment': 'Foo',
             'trace': [
                 {'type': 'EnterGate', 'data': {'feature': 'test_feature'}},
@@ -177,3 +203,99 @@ class TestObjectLogger(unittest.TestCase):
                 {'type': 'LeaveGate', 'data': {'value': 'Foo'}},
                 ],
             }])
+
+
+
+class TestNetworkLogger(unittest.TestCase):
+
+    @responses.activate
+    @patch('uuid.uuid4', return_value='fakeuuid')
+    def test_log_simple(self, uuid4):
+        responses.add(responses.POST,
+                mock_url,
+                json={"data": "ok"})
+
+        f = Feature(
+                'test_feature',
+                variants=[Variant('foo', 'Foo')],
+                default_arm='foo',
+                )
+
+        logger = NetworkLogger(mock_url,
+                headers={'Authorization': 'Bearer glen'},
+                now=mock_now,
+                debug=True)
+        f(User("one"), log=logger)
+
+        wait_for_responses(logger)
+
+        assert len(responses.calls) == 1
+        assert responses.calls[0].request.headers.get('Authorization') == 'Bearer glen'
+        assert responses.calls[0].request.headers.get('Content-Type') == 'application/json; charset=utf-8'
+        assert json.loads(responses.calls[0].request.body) == {
+            'ts': '2022-01-29T12:11:10+00:00',
+            'call_id': 'fakeuuid',
+            'entity': {
+                'type': 'User',
+                'value': {
+                    'id': 'one',
+                    },
+                },
+            'feature': {
+                'name': 'test_feature',
+                'rollouts': [{
+                    'arms': [{
+                        'type': 'Arm',
+                        'variant': 'foo',
+                        'weight': 1.0,
+                        }],
+                    'name': 'default',
+                    'population': {
+                        'name': 'Default',
+                        'type': 'Population',
+                        },
+                    'randomizer': "Hash(Concat('default', ':', $id))",
+                    'type': 'Rollout',
+                    }],
+                'type': 'Feature',
+                'variants': {
+                    'foo': {
+                        'name': 'foo',
+                        'nested': False,
+                        'type': 'Variant',
+                        'value': 'Foo',
+                        },
+                    },
+                },
+            'variant': {'name': 'foo', 'nested': False, 'type': 'Variant', 'value': 'Foo'},
+            'assignment': 'Foo',
+            'trace': None,
+            }
+
+    @responses.activate
+    def test_log_format(self):
+        responses.add(responses.POST,
+                mock_url,
+                status=500)
+        responses.add(responses.POST,
+                mock_url,
+                json={"data": {"id": "mockuid"}})
+
+        logger = NetworkLogger(mock_url,
+                headers={'Authorization': 'Bearer glen'},
+                now=mock_now,
+                body=lambda x: {"custom": "foo"},
+                debug=True)
+
+        f = Feature(
+                'test_feature',
+                variants=[Variant('foo', 'Foo')],
+                default_arm='foo',
+                )
+
+        f(User("one"), log=logger)
+
+        wait_for_responses(logger)
+
+        assert len(responses.calls) == 1
+        assert responses.calls[0].request.body == '{"custom": "foo"}'

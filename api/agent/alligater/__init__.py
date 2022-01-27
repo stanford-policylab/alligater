@@ -10,7 +10,7 @@ from .rollout import Rollout
 from .population import Population
 from .common import ValidationError, MissingFeatureError
 from .parse import parse_yaml, load_config
-from .log import default_logger, ObjectLogger, PrintLogger
+from .log import default_logger, ObjectLogger, PrintLogger, NetworkLogger
 import alligater.func as func
 import alligater.field as field
 
