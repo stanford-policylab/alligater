@@ -1,6 +1,6 @@
 import uuid
 
-from .common import ValidationError
+from .common import ValidationError, NoAssignment
 from .rollout import Rollout
 from .population import Population
 from .arm import Arm
@@ -119,12 +119,13 @@ class Feature:
                 'rollouts': [r.to_dict() for r in self.rollouts],
                 }
 
-    def __call__(self, entity, log=None, call_id=None):
+    def __call__(self, entity, log=None, call_id=None, sticky=None):
         """Apply the gate to the given entity.
 
         Args:
             entity - the entity to gate
             log - logging function
+            sticky - optional function to fetch previous assignment
 
         Internal Args:
             call_id - the ID of the feature invocation that this call is
@@ -134,11 +135,40 @@ class Feature:
             Variant that the entity should receive
         """
         nested = call_id is not None
+        value = None
         if not nested:
             call_id = str(uuid.uuid4())
             events.EnterGate(log, feature=self, entity=entity, call_id=call_id)
 
         events.EnterFeature(log, feature=self, entity=entity, call_id=call_id)
+
+        if sticky:
+            has_assignment = False
+            try:
+                value = sticky(self, entity)
+                has_assignment = True
+            except NoAssignment:
+                pass
+            except Exception as e:
+                events.Error(log,
+                        message=f"error evaluating sticky assignment {e}",
+                        call_id=call_id)
+
+                # Don't try to swallow exceptions, since it's now ambiguous
+                # whether a value was assigned and it could be problematic for
+                # an experiment to reassign something. If for the use-case it
+                # doesn't matter whether the feature is re-evaluated, then
+                # exceptions should be handled in the `sticky` function itself.
+                raise
+            finally:
+                events.StickyAssignment(log,
+                        value=value,
+                        assigned=has_assignment,
+                        call_id=call_id)
+                if has_assignment:
+                    events.LeaveFeature(log, value=value, call_id=call_id)
+                    events.LeaveGate(log, value=value, call_id=call_id)
+                    return value
 
         for i, r in enumerate(self.rollouts):
             variant_name = r(call_id, entity, log=log)
@@ -154,6 +184,9 @@ class Feature:
 
                 return value
 
+        # This code is probably unreachable since there has to be a default
+        # rollout to fall back on. But the feature definitions can be quite
+        # complex and I certainly don't know everything.
         events.Error(log, message="no variant found", call_id=call_id)
         events.LeaveFeature(log, value=None, call_id=call_id)
         if not nested:

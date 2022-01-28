@@ -204,6 +204,64 @@ class TestObjectLogger(unittest.TestCase):
                 ],
             }])
 
+    @patch('uuid.uuid4', return_value='fakeuuid')
+    def test_log_sticky_trace(self, uuid4):
+        f = Feature(
+                'test_feature',
+                variants=[Variant('foo', 'Foo')],
+                default_arm='foo',
+                )
+
+        write = MockWriter()
+        f(User("two"),
+                sticky=lambda f, e: 'sticky',
+                log=ObjectLogger(write, now=mock_now, trace=True))
+
+        write.assertWritten([{
+            'ts': fake_now,
+            'call_id': 'fakeuuid',
+            'entity': {
+                'type': 'User',
+                'value': {
+                    'id': 'two',
+                    },
+                },
+            'feature': {
+                'name': 'test_feature',
+                'rollouts': [{
+                    'arms': [{
+                        'type': 'Arm',
+                        'variant': 'foo',
+                        'weight': 1.0,
+                        }],
+                    'name': 'default',
+                    'population': {
+                        'name': 'Default',
+                        'type': 'Population',
+                        },
+                    'randomizer': "Hash(Concat('default', ':', $id))",
+                    'type': 'Rollout',
+                    }],
+                'type': 'Feature',
+                'variants': {
+                    'foo': {
+                        'name': 'foo',
+                        'nested': False,
+                        'type': 'Variant',
+                        'value': 'Foo',
+                        },
+                    },
+                },
+            'variant': '',
+            'assignment': 'sticky',
+            'trace': [
+                {'type': 'EnterGate', 'data': {'feature': 'test_feature'}},
+                {'type': 'EnterFeature', 'data': {'feature': 'test_feature'}},
+                {'type': 'StickyAssignment', 'data': {'value': 'sticky', 'assigned': True}},
+                {'type': 'LeaveFeature', 'data': {'value': 'sticky'}},
+                {'type': 'LeaveGate', 'data': {'value': 'sticky'}},
+                ],
+            }])
 
 
 class TestNetworkLogger(unittest.TestCase):

@@ -8,7 +8,7 @@ from .variant import Variant
 from .arm import Arm
 from .rollout import Rollout
 from .population import Population
-from .common import ValidationError, MissingFeatureError
+from .common import ValidationError, MissingFeatureError, NoAssignment
 from .parse import parse_yaml, load_config
 from .log import default_logger, ObjectLogger, PrintLogger, NetworkLogger
 import alligater.func as func
@@ -38,6 +38,7 @@ class Alligater:
             yaml=None,
             logger=default_logger,
             reload_interval=0,
+            sticky=None,
             loader_kwargs=None,
             ):
         """Create a new feature gater.
@@ -51,6 +52,8 @@ class Alligater:
             logger - Function to call to log decisions. See `events` for more
             information about how to interpret gating decisions.
             reload_interval - Number of seconds between checking for YAML changes
+            sticky - Optional function to lookup previous assignments for the
+            input entity. This will skip full evaluation.
             loader_kwargs - Arguments to pass to the config loader. See the
             method in `parse.py` for details.
         """
@@ -74,6 +77,8 @@ class Alligater:
         self._reload_interval = reload_interval
         # Arguments for `load_config` (See `parse#load_config`.)
         self._loader_kwargs = loader_kwargs if loader_kwargs else {}
+        # Sticky assignment fetcher
+        self._sticky = sticky
 
         # Start reloading. This will load one initial time on the main thread,
         # then (if `reload_interval` and `yaml` options are passed) will reload
@@ -109,7 +114,7 @@ class Alligater:
         Returns:
             Value of the variant to return.
         """
-        return feature(entity, log=self._logger)
+        return feature(entity, log=self._logger, sticky=self._sticky)
 
     def _reload(self):
         """Start a background process to reload YAML at an interval."""

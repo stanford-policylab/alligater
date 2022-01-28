@@ -118,6 +118,16 @@ Attributes:
 """
 
 
+StickyAssignment = _Event("StickyAssignment", ("value", "assigned"))
+"""StickyAssignment is fired when the sticky assignment function is evaluated.
+
+Attributes:
+    value - Assigned value. This can be none, which could be a legitimate
+    assigned value, or could indicate there was no value assigned yet.
+    assigned - Whether or not a value was assigned.
+"""
+
+
 ChoseVariant = _Event("ChoseVariant", ("variant",))
 """ChoseVariant is fired when a Variant is selected.
 
@@ -240,4 +250,15 @@ Attributes:
     f - The name of the function being evaluated
     args - The list of arguments
     result - The evaluation result
+"""
+
+
+Error = _Event("Error", ("message",))
+"""Error is emitted when evaluation encounters an unexpected error.
+
+In some cases the exception can be handled internally and is only logged for
+visibility; in other cases the exception will be raised as well.
+
+Attributes:
+    message - Information about the error
 """

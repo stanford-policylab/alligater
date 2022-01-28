@@ -6,8 +6,6 @@ try:
     from yaml import CLoader as Loader
 except ImportError:
     from yaml import Loader
-import dateutil.parser
-from datetime import date, datetime
 
 from .common import InvalidConfigError
 from .population import Population
@@ -164,12 +162,6 @@ def _expand_rollouts(rollouts):
         if 'randomizer' in args:
             args['randomizer'] = _expand_expression(args['randomizer'])
 
-        if 'after' in args:
-            args['after'] = _expand_datetime(args['after'])
-
-        if 'until' in args:
-            args['until'] = _expand_datetime(args['until'])
-
         result.append(Rollout(**args))
 
     return result
@@ -227,24 +219,6 @@ def _expand_feature(feature, default_feature=None):
 
     name = result.pop('name')
     return Feature(name, **result)
-
-
-def _expand_datetime(s):
-    """Parse string into datetime.
-
-    Args:
-        s - ISO date string, or a date, or a datetime.
-
-    Returns:
-        Instantiated datetime object
-    """
-    # PyYAML does annoying parsing of dates in certain formats, so watch out
-    # for that and normalize to datetime.
-    if isinstance(s, date):
-        return datetime.combine(s, datetime.min.time())
-    elif isinstance(s, datetime):
-        return s
-    return dateutil.parser.isoparse(s)
 
 
 def _parse_feature_yaml_str(s, default_features=None):

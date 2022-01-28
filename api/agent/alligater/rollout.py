@@ -27,9 +27,6 @@ class Rollout:
             population=Population.DEFAULT,
             arms=None,
             randomizer=DEFAULT_RANDOMIZER,
-            after=None,
-            until=None,
-            time_key='entry_time',
             ):
         """Construct a new Rollout.
 
@@ -44,21 +41,11 @@ class Rollout:
             all unspecified arms.
             randomizer - Expression to use to randomize treatment assignment.
             By default this randomizes using the `id` attribute of the input.
-            after - Optional datetime to begin rollout. No entity that entered
-            before this time will be eligible for this rollout.
-            until - Optional datetime to end rollout. No entity that entered
-            after this time will be eligible for this rollout.
-            time_key - Key in the input entity to search for entry time. If
-            either `until` or `after` is specified and the `time_key` is
-            missing from the entity, the entity will not be eligible.
         """
         self.name = name
         self.population = self._get_population(population)
         self.arms = self._get_arms(arms)
         self.randomize = self._get_randomizer(randomizer)
-        self.after = after
-        self.until = until
-        self.time_key = time_key
 
     def _get_population(self, population):
         """Get the full population configuration.
@@ -181,19 +168,11 @@ class Rollout:
 
         self.population.validate()
 
-        # Validate times if they are provided
-        if self.after and self.until:
-            if self.after >= self.until:
-                raise ValidationError("Start time can't come after end time for Rollout {}".format(self.name))
-
         # Special validation for the default rollout. It has to be "complete."
         # In other words, it has to assign literally everyone to some variant.
         if self.name == Rollout.DEFAULT:
             if self.population != Population.DEFAULT:
                 raise ValidationError("The default Rollout must use the default Population")
-
-            if self.after or self.until:
-                raise ValidationError("The default Rollout can't be time-constrained")
 
         if not callable(self.randomize):
             raise ValidationError("Expected randomization function to be callable")
@@ -232,30 +211,7 @@ class Rollout:
         """
         events.EnterRollout(log, rollout=self, call_id=call_id)
 
-        on_time = True
-        if self.after or self.until:
-            ts = get_entity_field(entity, self.time_key)
-            if not ts:
-                # This is problematic; we could warn about bugs here..
-                on_time = False
-            else:
-                if self.after:
-                    on_time = on_time and self.after <= ts
-
-                if self.until:
-                    on_time = on_time and ts < self.until
-
-            events.CheckTime(log,
-                    entity=entity,
-                    time_key=self.time_key,
-                    time=ts,
-                    after=self.after,
-                    until=self.until,
-                    result=on_time,
-                    call_id=call_id,
-                    )
-
-        if not on_time or not self.population(call_id, entity, log=log):
+        if not self.population(call_id, entity, log=log):
             events.LeaveRollout(log, member=False, call_id=call_id)
             return None
 

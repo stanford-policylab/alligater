@@ -144,3 +144,11 @@ class InvalidConfigError(Exception):
 class MissingFeatureError(Exception):
     """Error thrown when trying to access an undefined feature."""
     pass
+
+
+class NoAssignment(Exception):
+    """Entity has not been assigned any variant of this feature.
+
+    Throw this in the `sticky` callback to indicate the feature should be
+    evaluated because there is no assignment yet.
+    """
