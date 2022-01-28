@@ -135,6 +135,7 @@ class Feature:
             Variant that the entity should receive
         """
         nested = call_id is not None
+        variant_name = None
         value = None
         if not nested:
             call_id = str(uuid.uuid4())
@@ -145,7 +146,7 @@ class Feature:
         if sticky:
             has_assignment = False
             try:
-                value = sticky(self, entity)
+                variant_name, value = sticky(self, entity)
                 has_assignment = True
             except NoAssignment:
                 pass
@@ -162,6 +163,7 @@ class Feature:
                 raise
             finally:
                 events.StickyAssignment(log,
+                        variant=variant_name,
                         value=value,
                         assigned=has_assignment,
                         call_id=call_id)

@@ -64,6 +64,7 @@ class ObjectLogger:
                         'assignment': None,
                         'variant': '',
                         'trace': None if not self._trace else [],
+                        'repeat': False,
                         }
 
             if self._trace:
@@ -80,6 +81,15 @@ class ObjectLogger:
                 # is defined as a tree. In that case this will be called
                 # multiple times, but only the last (leaf) variant will stick.
                 self._cache[call_id]['variant'] = simple_object(event.variant)
+
+            # Get assigned variant from the sticky assignment if it exists.
+            if event == events.StickyAssignment and event.assigned:
+                self._cache[call_id].update({
+                    'variant': {
+                        'name': event.variant,
+                        },
+                    'repeat': True,
+                    })
 
             if event == events.LeaveGate:
                 self._cache[call_id]['assignment'] = event.value

@@ -109,6 +109,7 @@ class TestObjectLogger(unittest.TestCase):
                 },
             'variant': {'name': 'foo', 'nested': False, 'type': 'Variant', 'value': 'Foo'},
             'assignment': 'Foo',
+            'repeat': False,
             'trace': None,
             }])
 
@@ -132,6 +133,7 @@ class TestObjectLogger(unittest.TestCase):
                     'id': 'two',
                     },
                 },
+            'repeat': False,
             'feature': {
                 'name': 'test_feature',
                 'rollouts': [{
@@ -214,7 +216,7 @@ class TestObjectLogger(unittest.TestCase):
 
         write = MockWriter()
         f(User("two"),
-                sticky=lambda f, e: 'sticky',
+                sticky=lambda f, e: ('stickyvariant', 'sticky'),
                 log=ObjectLogger(write, now=mock_now, trace=True))
 
         write.assertWritten([{
@@ -252,12 +254,13 @@ class TestObjectLogger(unittest.TestCase):
                         },
                     },
                 },
-            'variant': '',
+            'repeat': True,
+            'variant': {'name': 'stickyvariant'},
             'assignment': 'sticky',
             'trace': [
                 {'type': 'EnterGate', 'data': {'feature': 'test_feature'}},
                 {'type': 'EnterFeature', 'data': {'feature': 'test_feature'}},
-                {'type': 'StickyAssignment', 'data': {'value': 'sticky', 'assigned': True}},
+                {'type': 'StickyAssignment', 'data': {'variant': 'stickyvariant', 'value': 'sticky', 'assigned': True}},
                 {'type': 'LeaveFeature', 'data': {'value': 'sticky'}},
                 {'type': 'LeaveGate', 'data': {'value': 'sticky'}},
                 ],
@@ -328,6 +331,7 @@ class TestNetworkLogger(unittest.TestCase):
             'variant': {'name': 'foo', 'nested': False, 'type': 'Variant', 'value': 'Foo'},
             'assignment': 'Foo',
             'trace': None,
+            'repeat': False,
             }
 
     @responses.activate

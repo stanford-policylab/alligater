@@ -86,6 +86,10 @@ def simple_object(value, with_type=False):
 
     if dataclasses.is_dataclass(value):
         d = dataclasses.asdict(value)
+        # If a dataclass defins a synthetic `id` using the `@property`
+        # decorator, make sure it gets included in the serialization.
+        if hasattr(value, 'id'):
+            d['id'] = value.id
     elif hasattr(value, 'asdict'):
         d = value.asdict()
     elif hasattr(value, 'to_dict'):

@@ -187,10 +187,10 @@ class TestFeature(unittest.TestCase):
             )
 
         def _sticky_b(feature, entity):
-            return 'B'
+            return 'b', 'B'
 
         def _sticky_none(feature, entity):
-            return None
+            return None, None
 
         def _sticky_no_assignment(feature, entity):
             raise NoAssignment
