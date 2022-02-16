@@ -4,6 +4,7 @@ from .common import ValidationError, NoAssignment
 from .rollout import Rollout
 from .population import Population
 from .arm import Arm
+from .value import Value, CallType
 import alligater.events as events
 
 
@@ -132,7 +133,9 @@ class Feature:
                       nested within. This is None if the call is not nested.
 
         Returns:
-            Variant that the entity should receive
+            Variant that the entity should receive and the CallID.
+
+            The CallID can be used for deferred logging invocations.
         """
         nested = call_id is not None
         variant_name = None
@@ -170,7 +173,7 @@ class Feature:
                 if has_assignment:
                     events.LeaveFeature(log, value=value, call_id=call_id)
                     events.LeaveGate(log, value=value, call_id=call_id)
-                    return value
+                    return Value(value, call_id, CallType.EXPOSURE, log=log)
 
         for i, r in enumerate(self.rollouts):
             variant_name = r(call_id, entity, log=log)
@@ -184,7 +187,7 @@ class Feature:
                 if not nested:
                     events.LeaveGate(log, value=value, call_id=call_id)
 
-                return value
+                return Value(value, call_id, CallType.ASSIGNMENT, log=log)
 
         # This code is probably unreachable since there has to be a default
         # rollout to fall back on. But the feature definitions can be quite

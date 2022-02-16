@@ -53,7 +53,7 @@ else:
 3. Load feature definitions from YAML (either from a local file or a remote URL).
 4. Flexible targetting. features can target multiple populations with arbitrarily complex logic, assigning treatments either randomly or explicitly.
 5. Stable assignments. Choices (even random ones) made by the gater are deterministic. Optionally, assignments can be read from external sources such as a database.
-6. Robust logging. Assignment choices can be inspected in detail with trace logging. The "state of the world" trace can also be logged as needed for experiment analysis. A couple of logger implementations are provided; the `print` function also works.
+6. Robust logging. Assignment choices can be inspected in detail with trace logging. The "state of the world" trace can also be logged as needed for experiment analysis. A couple of logger implementations are provided; the `print` function also works. Logging can be deferred or immediate.
 7. Targetting expressions can be written in a simple syntax in the YAML files, like `$language In ['en', 'es']`. This gives the YAML configs nearly as much flexibility as defining features in code.
 8. Features access is threadsafe.
 9. YAML-based features can be live-reloaded at a configurable interval.

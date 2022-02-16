@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 from dataclasses import dataclass
 
+from .value import CallType
 from .common import NoAssignment
 from .feature import Feature
 from .rollout import Rollout
@@ -94,7 +95,7 @@ class TestFeature(unittest.TestCase):
 
         # The my_seed Population hashes to: 0.9791994382873984
         # So it gets the default variant.
-        assert f(User("1")) is None
+        assert f(User("1")) == None
 
         # my_seed Population hashes to: 0.11176176296782649
         # test_segment_1 hashes to: 0.19817491497580958
@@ -131,9 +132,9 @@ class TestFeature(unittest.TestCase):
                 ],
             )
 
-        assert f({"id": "id_2"}) is None
+        assert f({"id": "id_2"}) == None
         assert f({"custom": "id_2"}) == 'A'
-        assert f({"custom": "other"}) is None
+        assert f({"custom": "other"}) == None
         # When the attribute returns a list, the `in` test uses ANY semantics.
         assert f({"custom": ["other", "id_2"]}) == 'A'
 
@@ -196,10 +197,18 @@ class TestFeature(unittest.TestCase):
             raise NoAssignment
 
         # Hash 0.2033181243131095
-        assert f({"custom": "id_1"}, log=print) == 'A'
-        assert f({"custom": "id_1"}, log=print, sticky=_sticky_b) == 'B'
-        assert f({"custom": "id_1"}, log=print, sticky=_sticky_none) is None
-        assert f({"custom": "id_1"}, log=print, sticky=_sticky_no_assignment) == 'A'
+        v = f({"custom": "id_1"}, log=print)
+        assert v == 'A'
+        assert v.call_type == CallType.ASSIGNMENT
+        v = f({"custom": "id_1"}, log=print, sticky=_sticky_b)
+        assert v == 'B'
+        assert v.call_type == CallType.EXPOSURE
+        v = f({"custom": "id_1"}, log=print, sticky=_sticky_none)
+        assert v == None
+        assert v.call_type == CallType.EXPOSURE
+        v = f({"custom": "id_1"}, log=print, sticky=_sticky_no_assignment)
+        assert v == 'A'
+        assert v.call_type == CallType.ASSIGNMENT
 
     def test_sticky_error(self):
         """Should not swallow errors thrown by the sticky assignment function."""

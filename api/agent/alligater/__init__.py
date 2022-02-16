@@ -10,7 +10,14 @@ from .rollout import Rollout
 from .population import Population
 from .common import ValidationError, MissingFeatureError, NoAssignment
 from .parse import parse_yaml, load_config
-from .log import default_logger, ObjectLogger, PrintLogger, NetworkLogger
+from .value import Value, CallType
+from .log import (
+        default_logger,
+        ObjectLogger,
+        PrintLogger,
+        NetworkLogger,
+        DeferrableLogger,
+        )
 import alligater.func as func
 import alligater.field as field
 
@@ -104,17 +111,31 @@ class Alligater:
         except KeyError:
             raise MissingFeatureError(feature_name)
 
-    def __call__(self, feature, entity):
+    def __call__(self, feature, entity, silent=False, deferred=None):
         """Evaluate an entity against the given feature.
 
         Args:
             feature - Feature to evaluate
             entity - Arbitrary entity to evaluate
+            silent - Whether to suppress logging for this invocation
+            deferred - Whether exposure logging should be deferred. Note that
+            assignment logging can never be deferred.
         
         Returns:
-            Value of the variant to return.
+            Wrapped value of the variant to return.
         """
-        return feature(entity, log=self._logger, sticky=self._sticky)
+        logger = self._logger if not silent else None
+        value = feature(entity, log=logger, sticky=self._sticky)
+        # Note that Logger implementations that aren't DeferrableLoggers
+        # log immediately and calling `log` is just a no-op.
+        if value.call_type == CallType.ASSIGNMENT:
+            value.log()
+
+        # Log an exposure immediately unless it's deferred.
+        if not deferred:
+            value.log()
+
+        return value
 
     def _reload(self):
         """Start a background process to reload YAML at an interval."""

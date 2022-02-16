@@ -1,5 +1,6 @@
 from .common import ValidationError
 from .feature import Feature
+from .value import Value
 import alligater.events as events
 
 
@@ -95,7 +96,14 @@ class Variant:
 
         if self.is_nested:
             events.VariantRecurse(log, inner=self._value, call_id=call_id)
-            return self._value(entity, log=log, call_id=call_id)
+
+            result = self._value(entity, log=log, call_id=call_id)
+            # Unwrap wrapped Values. This happens when features are nested in
+            # variants. Only the final value will be wrapped.
+            if isinstance(result, Value):
+                return result.value
+            else:
+                return result
 
         events.LeaveVariant(log, value=self._value, call_id=call_id)
         return self._value

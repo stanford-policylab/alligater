@@ -3,6 +3,9 @@ import signal
 import threading
 import sys
 import requests
+import abc
+import uuid
+import copy
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.packages.urllib3.util.retry import Retry
@@ -18,7 +21,24 @@ default_now = lambda: datetime.now(timezone.utc)
 
 
 
-class ObjectLogger:
+class DeferrableLogger(abc.ABC):
+    """Traits for a logger that can be deferred."""
+
+    @abc.abstractmethod
+    def write_log(self, call_id):
+        """Write the log with the given ID."""
+        ...
+
+    @abc.abstractmethod
+    def drop_log(self, call_id):
+        """Clear the log with the given ID without writing.
+
+        This must be called to avoid memory leaks for dropped logs.
+        """
+        ...
+
+
+class ObjectLogger(DeferrableLogger):
     """Logger that aggregates event data as an object."""
 
     def __init__(self, write, trace=False, now=default_now, workers=1):
@@ -35,6 +55,7 @@ class ObjectLogger:
         self._write = write
         self._cache = {}
         self._finished = []
+        self._deferred = set()
         self._trace = trace
         self._stopped = False
         self._workers = [threading.Thread(
@@ -93,8 +114,40 @@ class ObjectLogger:
 
             if event == events.LeaveGate:
                 self._cache[call_id]['assignment'] = event.value
-                self._finished.append(call_id)
-                self._cv.notify()
+                # Note that log is not written immediately. Call `write_log` to
+                # put it in the queue.
+                self._deferred.add(call_id)
+
+    def write_log(self, call_id):
+        """Write a deferred log by its ID."""
+        with self._cv:
+            if call_id not in self._deferred:
+                print(f"Call {call_id} is not available for writing!")
+                return
+            self._deferred.remove(call_id)
+            self._finished.append(call_id)
+
+            # Copy the event as an exposure and defer it.
+            data = copy.deepcopy(self._cache[call_id])
+            new_call_id = str(uuid.uuid4())
+            data.update({
+                'repeat': True,
+                'call_id': new_call_id,
+                })
+            self._deferred.add(new_call_id)
+            self._cache[new_call_id] = data
+
+            self._cv.notify()
+            return new_call_id
+
+    def drop_log(self, call_id):
+        """Drop a deferred log by its ID."""
+        with self._cv:
+            self._deferred.remove(call_id)
+            try:
+                del self._cache[call_id]
+            except KeyError:
+                pass
 
     def _drain(self, *args):
         """Stop worker threads and drain the queue."""

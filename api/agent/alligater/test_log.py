@@ -2,6 +2,7 @@ import unittest
 import threading
 import time
 import responses
+import copy
 import json
 from unittest.mock import patch
 from dataclasses import dataclass
@@ -58,10 +59,15 @@ class MockWriter:
                 n += p
             assert self.results == expected
 
+    def assertNotWritten(self, timeout=1.0):
+        with self.cv:
+            self.cv.wait(timeout=timeout)
+            assert not self.results
+
 
 class TestObjectLogger(unittest.TestCase):
 
-    @patch('uuid.uuid4', return_value='fakeuuid')
+    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2', 'fakeuuid3'])
     def test_log_simple(self, uuid4):
         f = Feature(
                 'test_feature',
@@ -70,11 +76,15 @@ class TestObjectLogger(unittest.TestCase):
                 )
 
         write = MockWriter()
-        f(User("one"), log=ObjectLogger(write, now=mock_now))
+        v = f(User("one"), log=ObjectLogger(write, now=mock_now))
 
-        write.assertWritten([{
+        write.assertNotWritten()
+
+        v.log()
+
+        log1 = {
             'ts': fake_now,
-            'call_id': 'fakeuuid',
+            'call_id': 'fakeuuid1',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -111,9 +121,22 @@ class TestObjectLogger(unittest.TestCase):
             'assignment': 'Foo',
             'repeat': False,
             'trace': None,
-            }])
+            }
 
-    @patch('uuid.uuid4', return_value='fakeuuid')
+        write.assertWritten([log1])
+
+        # Now log an exposure
+        v.log()
+        log2 = copy.deepcopy(log1)
+        log2.update({
+            'call_id': 'fakeuuid2',
+            'repeat': True,
+            })
+
+        write.assertWritten([log1, log2])
+        assert v._call_id == 'fakeuuid3'
+
+    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2'])
     def test_log_simple_trace(self, uuid4):
         f = Feature(
                 'test_feature',
@@ -122,11 +145,11 @@ class TestObjectLogger(unittest.TestCase):
                 )
 
         write = MockWriter()
-        f(User("two"), log=ObjectLogger(write, now=mock_now, trace=True))
+        f(User("two"), log=ObjectLogger(write, now=mock_now, trace=True)).log()
 
         write.assertWritten([{
             'ts': fake_now,
-            'call_id': 'fakeuuid',
+            'call_id': 'fakeuuid1',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -206,7 +229,7 @@ class TestObjectLogger(unittest.TestCase):
                 ],
             }])
 
-    @patch('uuid.uuid4', return_value='fakeuuid')
+    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2'])
     def test_log_sticky_trace(self, uuid4):
         f = Feature(
                 'test_feature',
@@ -217,11 +240,11 @@ class TestObjectLogger(unittest.TestCase):
         write = MockWriter()
         f(User("two"),
                 sticky=lambda f, e: ('stickyvariant', 'sticky'),
-                log=ObjectLogger(write, now=mock_now, trace=True))
+                log=ObjectLogger(write, now=mock_now, trace=True)).log()
 
         write.assertWritten([{
             'ts': fake_now,
-            'call_id': 'fakeuuid',
+            'call_id': 'fakeuuid1',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -270,7 +293,7 @@ class TestObjectLogger(unittest.TestCase):
 class TestNetworkLogger(unittest.TestCase):
 
     @responses.activate
-    @patch('uuid.uuid4', return_value='fakeuuid')
+    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2'])
     def test_log_simple(self, uuid4):
         responses.add(responses.POST,
                 mock_url,
@@ -286,7 +309,7 @@ class TestNetworkLogger(unittest.TestCase):
                 headers={'Authorization': 'Bearer glen'},
                 now=mock_now,
                 debug=True)
-        f(User("one"), log=logger)
+        f(User("one"), log=logger).log()
 
         wait_for_responses(logger)
 
@@ -295,7 +318,7 @@ class TestNetworkLogger(unittest.TestCase):
         assert responses.calls[0].request.headers.get('Content-Type') == 'application/json; charset=utf-8'
         assert json.loads(responses.calls[0].request.body) == {
             'ts': '2022-01-29T12:11:10+00:00',
-            'call_id': 'fakeuuid',
+            'call_id': 'fakeuuid1',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -355,7 +378,7 @@ class TestNetworkLogger(unittest.TestCase):
                 default_arm='foo',
                 )
 
-        f(User("one"), log=logger)
+        f(User("one"), log=logger).log()
 
         wait_for_responses(logger)
 
