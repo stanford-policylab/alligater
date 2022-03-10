@@ -15,6 +15,7 @@ from .arm import Arm
 from .variant import Variant
 from .field import _Field
 from .expr import parse as parse_expression
+from .log import log
 
 
 
@@ -246,7 +247,7 @@ def _parse_feature_yaml_str(s, default_features=None):
     return result
 
 
-def parse_yaml(s, default_features=None):
+def parse_yaml(s, default_features=None, raise_exceptions=False):
     """Load features from the given YAML config.
 
     The default definitions of these features can be given in
@@ -257,6 +258,8 @@ def parse_yaml(s, default_features=None):
         s - YAML config as a string
         default_features - A dictionary containing the default feature
         definitions by name.
+        raise_exceptions - Whether to force exceptions to be raised. Exceptions
+        will otherwise be swallowed unless there are no default features.
 
     Returns:
         Dictionary of instantiated features.
@@ -268,10 +271,10 @@ def parse_yaml(s, default_features=None):
     try:
         return _parse_feature_yaml_str(s, default_features=default_features)
     except Exception as e:
-        if default_features is None:
-            raise InvalidConfigError(str(e))
+        if default_features is None or raise_exceptions:
+            raise InvalidConfigError(str(e)) from e
         else:
-            print("[WARNING] Failed to load features from YAML: {}".format(e))
+            log.warning("Failed to load features from YAML: {}".format(e))
             traceback.print_exc()
             return default_features
 

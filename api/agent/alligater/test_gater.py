@@ -1,5 +1,6 @@
 import unittest
-from unittest.mock import Mock
+import asyncio
+from unittest.mock import Mock, call
 import tempfile
 import time
 
@@ -30,14 +31,14 @@ class MockDeferredLogger(DeferrableLogger):
         self.mock.drop_log(call_id)
 
 
-class TestGater(unittest.TestCase):
+class TestGater(unittest.IsolatedAsyncioTestCase):
 
     def test_no_features(self):
         """Instantiate with no features."""
         gater = Alligater()
         assert gater._features == {}
 
-    def test_no_yaml(self):
+    async def test_no_yaml(self):
         """Instantiate with hardcoded features and no YAML."""
         logger = MockDeferredLogger()
         gater = Alligater(
@@ -45,10 +46,10 @@ class TestGater(unittest.TestCase):
                 features=[
                     Feature('foo', variants=[Variant('foo', 'Foo')], default_arm='foo'),
                     ])
-        assert gater.foo({}) == 'Foo'
+        assert await gater.foo({}) == 'Foo'
         assert logger.mock.write_log.call_count == 2
 
-    def test_deferred_exposure_logging(self):
+    async def test_deferred_exposure_logging(self):
         def _sticky(feature, entity):
             if entity['id'] == 2:
                 return 'bar', 'Bar'
@@ -61,17 +62,17 @@ class TestGater(unittest.TestCase):
                 features=[
                     Feature('foo', variants=[Variant('foo', 'Foo')], default_arm='foo'),
                     ])
-        v = gater.foo({'id': 1}, deferred=True)
+        v = await gater.foo({'id': 1}, deferred=True)
         assert v == 'Foo'
-        logger.mock.write_log.assert_called_with(v._logged[0])
+        logger.mock.write_log.has_calls([call('e3e70682-c209-4cac-629f-6fbed82c07cd')])
         assert logger.mock.write_log.call_count == 1
         logger.mock.drop_log.assert_not_called()
         v.log()
-        logger.mock.write_log.assert_called_with(v._logged[1])
+        logger.mock.write_log.has_calls([call('e3e70682-c209-4cac-629f-6fbed82c07cd')] * 2)
         logger.mock.drop_log.assert_not_called()
 
         logger.mock.reset_mock()
-        v2 = gater.foo({'id': 2}, deferred=True)
+        v2 = await gater.foo({'id': 2}, deferred=True)
         assert v2 == 'Bar'
         logger.mock.write_log.assert_not_called()
         logger.mock.drop_log.assert_not_called()
@@ -80,7 +81,7 @@ class TestGater(unittest.TestCase):
         logger.mock.write_log.assert_called_with(call_id)
         logger.mock.drop_log.assert_not_called()
 
-    def test_drop_deferred_logging(self):
+    async def test_drop_deferred_logging(self):
         logger = MockDeferredLogger()
         gater = Alligater(
                 sticky=lambda x, y: ('foo', 'Foo'),
@@ -88,7 +89,7 @@ class TestGater(unittest.TestCase):
                 features=[
                     Feature('foo', variants=[Variant('foo', 'Foo')], default_arm='foo'),
                     ])
-        v = gater.foo({}, deferred=True)
+        v = await gater.foo({}, deferred=True)
         assert v == 'Foo'
         call_id = v._call_id
         logger.mock.write_log.assert_not_called()
@@ -97,7 +98,7 @@ class TestGater(unittest.TestCase):
         logger.mock.write_log.assert_not_called()
         logger.mock.drop_log.assert_called_with(call_id)
 
-    def test_silence_logging(self):
+    async def test_silence_logging(self):
         """Test that logging can be suppressed."""
         logger = Mock()
         gater = Alligater(
@@ -105,12 +106,12 @@ class TestGater(unittest.TestCase):
                 features=[
                     Feature('foo', variants=[Variant('foo', 'Foo')], default_arm='foo'),
                     ])
-        assert gater.foo({}, silent=True) == 'Foo'
+        assert await gater.foo({}, silent=True) == 'Foo'
         logger.assert_not_called()
-        assert gater.foo({}) == 'Foo'
+        assert await gater.foo({}) == 'Foo'
         logger.assert_called()
 
-    def test_yaml_no_reload(self):
+    async def test_yaml_no_reload(self):
         """Instantiate with YAML path and no reload interval."""
         with tempfile.NamedTemporaryFile() as tf:
             tf.write(b"""
@@ -124,9 +125,9 @@ feature:
 
             gater = Alligater(yaml=tf.name)
 
-            assert gater.simplest_feature({}) == 'This is the only value'
+            assert await gater.simplest_feature({}) == 'This is the only value'
 
-    def test_yaml_reload(self):
+    async def test_yaml_reload(self):
         """Instantiate with YAML path and reload interval."""
         with tempfile.NamedTemporaryFile() as tf:
             tf.write(b"""
@@ -139,7 +140,7 @@ feature:
             tf.flush()
 
             gater = Alligater(yaml=tf.name, reload_interval=1)
-            assert gater.simplest_feature({}) == 'This is the only value'
+            assert await gater.simplest_feature({}) == 'This is the only value'
 
             tf.write(b"""
 feature:
@@ -167,9 +168,10 @@ feature:
             tf.flush()
 
             time.sleep(2)
-            assert gater.simplest_feature({}) == 'This is no longer the only value'
-            assert gater.simplest_feature({"id": "id_2"}) == 'This is another value'
-            assert gater.another_feature({}) == 'new feature'
+            assert await gater.simplest_feature({}) == 'This is no longer the only value'
+            assert await gater.simplest_feature({"id": "id_2"}) == 'This is another value'
+            assert await gater.another_feature({}) == 'new feature'
+            gater.stop()
 
     @responses.activate
     def test_yaml_remote_config(self):
@@ -183,4 +185,4 @@ feature:
   default_arm: foo
 """)
         gater = Alligater(yaml=url)
-        assert gater.simplest_feature({}) == 'This is the only value'
+        assert asyncio.run(gater.simplest_feature({})) == 'This is the only value'

@@ -1,10 +1,10 @@
+import asyncio
 import unittest
 import threading
 import time
 import responses
 import copy
 import json
-from unittest.mock import patch
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -65,10 +65,9 @@ class MockWriter:
             assert not self.results
 
 
-class TestObjectLogger(unittest.TestCase):
+class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
 
-    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2', 'fakeuuid3'])
-    def test_log_simple(self, uuid4):
+    async def test_log_simple(self):
         f = Feature(
                 'test_feature',
                 variants=[Variant('foo', 'Foo')],
@@ -76,7 +75,7 @@ class TestObjectLogger(unittest.TestCase):
                 )
 
         write = MockWriter()
-        v = f(User("one"), log=ObjectLogger(write, now=mock_now))
+        v = await f(User("one"), log=ObjectLogger(write, now=mock_now))
 
         write.assertNotWritten()
 
@@ -84,7 +83,7 @@ class TestObjectLogger(unittest.TestCase):
 
         log1 = {
             'ts': fake_now,
-            'call_id': 'fakeuuid1',
+            'call_id': 'e3e70682-c209-4cac-629f-6fbed82c07cd',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -129,15 +128,13 @@ class TestObjectLogger(unittest.TestCase):
         v.log()
         log2 = copy.deepcopy(log1)
         log2.update({
-            'call_id': 'fakeuuid2',
+            'call_id': 'f728b4fa-4248-5e3a-0a5d-2f346baa9455',
             'repeat': True,
             })
 
         write.assertWritten([log1, log2])
-        assert v._call_id == 'fakeuuid3'
 
-    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2'])
-    def test_log_simple_trace(self, uuid4):
+    async def test_log_simple_trace(self):
         f = Feature(
                 'test_feature',
                 variants=[Variant('foo', 'Foo')],
@@ -145,11 +142,12 @@ class TestObjectLogger(unittest.TestCase):
                 )
 
         write = MockWriter()
-        f(User("two"), log=ObjectLogger(write, now=mock_now, trace=True)).log()
+        v = await f(User("two"), log=ObjectLogger(write, now=mock_now, trace=True))
+        v.log()
 
         write.assertWritten([{
             'ts': fake_now,
-            'call_id': 'fakeuuid1',
+            'call_id': 'e3e70682-c209-4cac-629f-6fbed82c07cd',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -229,8 +227,7 @@ class TestObjectLogger(unittest.TestCase):
                 ],
             }])
 
-    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2'])
-    def test_log_sticky_trace(self, uuid4):
+    async def test_log_sticky_trace(self):
         f = Feature(
                 'test_feature',
                 variants=[Variant('foo', 'Foo')],
@@ -238,13 +235,14 @@ class TestObjectLogger(unittest.TestCase):
                 )
 
         write = MockWriter()
-        f(User("two"),
+        v = await f(User("two"),
                 sticky=lambda f, e: ('stickyvariant', 'sticky'),
-                log=ObjectLogger(write, now=mock_now, trace=True)).log()
+                log=ObjectLogger(write, now=mock_now, trace=True))
+        v.log()
 
         write.assertWritten([{
             'ts': fake_now,
-            'call_id': 'fakeuuid1',
+            'call_id': 'f728b4fa-4248-5e3a-0a5d-2f346baa9455',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -290,11 +288,10 @@ class TestObjectLogger(unittest.TestCase):
             }])
 
 
-class TestNetworkLogger(unittest.TestCase):
+class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
 
     @responses.activate
-    @patch('uuid.uuid4', side_effect=['fakeuuid1', 'fakeuuid2'])
-    def test_log_simple(self, uuid4):
+    def test_log_simple(self):
         responses.add(responses.POST,
                 mock_url,
                 json={"data": "ok"})
@@ -309,7 +306,8 @@ class TestNetworkLogger(unittest.TestCase):
                 headers={'Authorization': 'Bearer glen'},
                 now=mock_now,
                 debug=True)
-        f(User("one"), log=logger).log()
+        v = asyncio.run(f(User("one"), log=logger))
+        v.log()
 
         wait_for_responses(logger)
 
@@ -318,7 +316,7 @@ class TestNetworkLogger(unittest.TestCase):
         assert responses.calls[0].request.headers.get('Content-Type') == 'application/json; charset=utf-8'
         assert json.loads(responses.calls[0].request.body) == {
             'ts': '2022-01-29T12:11:10+00:00',
-            'call_id': 'fakeuuid1',
+            'call_id': 'e3e70682-c209-4cac-629f-6fbed82c07cd',
             'entity': {
                 'type': 'User',
                 'value': {
@@ -378,7 +376,8 @@ class TestNetworkLogger(unittest.TestCase):
                 default_arm='foo',
                 )
 
-        f(User("one"), log=logger).log()
+        v = asyncio.run(f(User("one"), log=logger))
+        v.log()
 
         wait_for_responses(logger)
 

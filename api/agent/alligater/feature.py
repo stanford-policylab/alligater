@@ -1,6 +1,6 @@
-import uuid
+import asyncio
 
-from .common import ValidationError, NoAssignment
+from .common import ValidationError, NoAssignment, get_uuid
 from .rollout import Rollout
 from .population import Population
 from .arm import Arm
@@ -120,7 +120,7 @@ class Feature:
                 'rollouts': [r.to_dict() for r in self.rollouts],
                 }
 
-    def __call__(self, entity, log=None, call_id=None, sticky=None):
+    async def __call__(self, entity, log=None, call_id=None, sticky=None):
         """Apply the gate to the given entity.
 
         Args:
@@ -141,7 +141,7 @@ class Feature:
         variant_name = None
         value = None
         if not nested:
-            call_id = str(uuid.uuid4())
+            call_id = get_uuid()
             events.EnterGate(log, feature=self, entity=entity, call_id=call_id)
 
         events.EnterFeature(log, feature=self, entity=entity, call_id=call_id)
@@ -149,7 +149,10 @@ class Feature:
         if sticky:
             has_assignment = False
             try:
-                variant_name, value = sticky(self, entity)
+                if asyncio.iscoroutinefunction(sticky):
+                    variant_name, value = await sticky(self, entity)
+                else:
+                    variant_name, value = sticky(self, entity)
                 has_assignment = True
             except NoAssignment:
                 pass
@@ -181,7 +184,7 @@ class Feature:
                 variant = self.variants[variant_name]
 
                 events.ChoseVariant(log, variant=variant, call_id=call_id)
-                value = variant(call_id, entity, log=log)
+                value = await variant(call_id, entity, log=log)
 
                 events.LeaveFeature(log, value=value, call_id=call_id)
                 if not nested:

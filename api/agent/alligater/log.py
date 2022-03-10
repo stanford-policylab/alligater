@@ -6,14 +6,17 @@ import requests
 import abc
 import uuid
 import copy
+import logging
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.packages.urllib3.util.retry import Retry
 from datetime import datetime, timezone
 
 import alligater.events as events
-from .common import simple_object, encode_json
+from .common import simple_object, encode_json, get_uuid
 
+# Sys log (different than feature trace log)
+log = logging.getLogger("alligater")
 
 
 default_now = lambda: datetime.now(timezone.utc)
@@ -70,6 +73,10 @@ class ObjectLogger(DeferrableLogger):
         for sig in sigs:
             signal.signal(sig, self._drain)
 
+    def stop(self):
+        """Shut off the logger and send any pending messages."""
+        self._drain()
+
     def __call__(self, event):
         """Log a single event."""
         # Every event tracks an ID that is unique to the invocation.
@@ -122,23 +129,20 @@ class ObjectLogger(DeferrableLogger):
         """Write a deferred log by its ID."""
         with self._cv:
             if call_id not in self._deferred:
-                print(f"Call {call_id} is not available for writing!")
                 return
-            self._deferred.remove(call_id)
-            self._finished.append(call_id)
 
-            # Copy the event as an exposure and defer it.
+            # Make a copy of the event data to write. This freezes the data at
+            # this moment in time.
             data = copy.deepcopy(self._cache[call_id])
-            new_call_id = str(uuid.uuid4())
-            data.update({
-                'repeat': True,
-                'call_id': new_call_id,
-                })
-            self._deferred.add(new_call_id)
-            self._cache[new_call_id] = data
-
+            # If this event has been sent before, generate a new ID for it.
+            if data['repeat']:
+                data['call_id'] = get_uuid()
+            # Add to queue to publish.
+            self._finished.append(data)
+            # Mark the cached object as a repeat if it's logged again.
+            self._cache[call_id]['repeat'] = True
+            # Wake a sender thread to broadcast the log.
             self._cv.notify()
-            return new_call_id
 
     def drop_log(self, call_id):
         """Drop a deferred log by its ID."""
@@ -151,44 +155,47 @@ class ObjectLogger(DeferrableLogger):
 
     def _drain(self, *args):
         """Stop worker threads and drain the queue."""
-        with self._cv:
-            self._stopped = True
-            self._cv.notify_all()
+        if not self._stopped:
+            log.debug("Stopping log write workers ...")
+            with self._cv:
+                self._stopped = True
+                self._cv.notify_all()
 
-        [w.join() for w in self._workers]
+            [w.join() for w in self._workers]
+            self._workers = []
 
         with self._cv:
+            if not self._finished:
+                return
+
+            log.debug("Draining pending logs ...")
             while len(self._finished) > 0:
+                event = self._finished.pop(0)
                 try:
-                    self._write_unsafe()
-                except (Exception, SystemExit):
+                    self._write_handled(event)
+                except SystemExit:
                     continue
 
     def _write_results(self):
         """[THREAD] Loop over queue and write events as they are found."""
-        with self._cv:
-            while True:
+        while not self._stopped:
+            with self._cv:
+                if not self._finished:
+                    self._cv.wait()
+                
                 if self._stopped:
                     return
 
-                if not self._finished:
-                    self._cv.wait()
-                    continue
+                event = self._finished.pop(0)
+            # Release the lock to write event, so that other workers can write.
+            self._write_handled(event)
 
-                self._write_unsafe()
-
-    def _write_unsafe(self):
-        """Write the head of the queue if possible with no thread safety."""
+    def _write_handled(self, event):
+        """Write an event with error handling."""
         try:
-            id_ = self._finished.pop(0)
-            event = self._cache.pop(id_)
             self._write(event)
-        except KeyError as e:
-            print("Synchronization error writing event:", e)
-        except IndexError:
-            pass
         except Exception as e:
-            print("Failed to write event:", e)
+            log.error("Failed to write event: {}".format(e))
 
 
 class NetworkLogger(ObjectLogger):
@@ -200,7 +207,7 @@ class NetworkLogger(ObjectLogger):
             auth=None,
             body=None,
             timeout=10.0,
-            max_retries=3,
+            max_retries=5,
             backoff_factor=1.0,
             debug=False,
             **kwargs):
@@ -275,19 +282,20 @@ class NetworkLogger(ObjectLogger):
         Args:
             data - Log to write
         """
-        self._debugw("Writing log", data)
+        self._debugw("Writing log: {}", data)
 
         try:
+            s = self._serialize(data)
             r = self._http.post(self._url,
                     timeout=self._timeout,
-                    data=self._serialize(data))
+                    data=s)
         
             r.raise_for_status()
             self._debugw("Log written")
         except HTTPError as e:
-            self._debugw("Failed to write log:", e)
+            self._debugw("Failed to write log: {}", e)
         except Exception as e:
-            self._debugw("Something unexpected happened:", e)
+            self._debugw("Something unexpected happened: {}", e)
 
     def _debugw(self, *args):
         """Write a debug line.
@@ -300,7 +308,7 @@ class NetworkLogger(ObjectLogger):
         if not self._debug:
             return
 
-        print("[NetworkLogger]", *args, file=sys.stderr)
+        log.debug(args[0].format(*args[1:]))
 
 
 class PrintLogger:

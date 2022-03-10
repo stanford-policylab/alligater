@@ -30,9 +30,6 @@ class Value:
         self._call_type = call_type
         self._log = log
         self._deferrable = isinstance(log, DeferrableLogger)
-        self._logged = []
-        if not self._deferrable:
-            self._logged.append(call_id)
 
     def __del__(self):
         """Clean up unsent logs when garbage collecting."""
@@ -55,8 +52,8 @@ class Value:
         Only needs to be called if the log is deferred.
         """
         if self._deferrable:
-            self._logged.append(self._call_id)
-            self._call_id = self._log.write_log(self._call_id)
+            self._log.write_log(self._call_id)
+            # If the call type wasn't already an exposure, it should be now!
             self._call_type = CallType.EXPOSURE
 
 

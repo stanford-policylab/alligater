@@ -1,3 +1,5 @@
+import asyncio
+
 from .common import ValidationError
 from .feature import Feature
 from .value import Value
@@ -79,7 +81,7 @@ class Variant:
                 'nested': self.is_nested,
                 }
 
-    def __call__(self, call_id, entity, log=None):
+    async def __call__(self, call_id, entity, log=None):
         """Get the value for this variant.
 
         If the value is a Feature (or a `functor`), it will be called with
@@ -97,7 +99,12 @@ class Variant:
         if self.is_nested:
             events.VariantRecurse(log, inner=self._value, call_id=call_id)
 
-            result = self._value(entity, log=log, call_id=call_id)
+            result = None
+            if asyncio.iscoroutinefunction(self._value):
+                result = await self._value(entity, log=log, call_id=call_id)
+            else:
+                result = self._value(entity, log=log, call_id=call_id)
+
             # Unwrap wrapped Values. This happens when features are nested in
             # variants. Only the final value will be wrapped.
             if isinstance(result, Value):

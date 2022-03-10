@@ -1,13 +1,30 @@
 import collections.abc
 import dataclasses
 import json
-import mmh3
+import uuid
 from datetime import datetime, date
+
+import mmh3
+
+from .rand import getrandbits
 
 
 
 # Maximum value it's possible to represent as a 64-bit double.
 MAX_DOUBLE = float(0xFFFFFFFFFFFFFFFF)
+
+
+def get_uuid():
+    """Get a UUID (v4).
+
+    In tests this can be made deterministic either by patching or seeding the
+    random number generator.
+
+    Returns:
+        UUIDv4 as a string
+    """
+    # Call into `random` explicitly so it can be seeded for tests.
+    return str(uuid.UUID(int=getrandbits(128)))
 
 
 def hash_id(s):
@@ -147,6 +164,21 @@ class InvalidConfigError(Exception):
 
 class MissingFeatureError(Exception):
     """Error thrown when trying to access an undefined feature."""
+    pass
+
+
+class NoConfig(Exception):
+    """Thrown when no YAML config path is provided."""
+    pass
+
+
+class NoReload(Exception):
+    """Thrown when no reload interval is given."""
+    pass
+
+
+class LoadError(Exception):
+    """Thrown when reloader fails to load YAML."""
     pass
 
 

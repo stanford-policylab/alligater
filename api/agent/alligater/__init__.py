@@ -1,4 +1,5 @@
 from functools import partial
+import atexit
 import threading
 import hashlib
 import time
@@ -8,10 +9,19 @@ from .variant import Variant
 from .arm import Arm
 from .rollout import Rollout
 from .population import Population
-from .common import ValidationError, MissingFeatureError, NoAssignment
+from .common import (
+        ValidationError,
+        MissingFeatureError,
+        NoAssignment,
+        NoConfig,
+        NoReload,
+        LoadError,
+        )
 from .parse import parse_yaml, load_config
 from .value import Value, CallType
+from .rand import seed
 from .log import (
+        log,
         default_logger,
         ObjectLogger,
         PrintLogger,
@@ -71,7 +81,7 @@ class Alligater:
         # Trace/event logging function
         self._logger = logger
         # Mutex for shared access to features dict from reloader thread.
-        self._mtx = threading.Lock()
+        self._cv = threading.Condition()
         # Path to YAML config (either local or remote path)
         self._yaml = yaml
         # Current list of features
@@ -86,14 +96,23 @@ class Alligater:
         self._loader_kwargs = loader_kwargs if loader_kwargs else {}
         # Sticky assignment fetcher
         self._sticky = sticky
+        # Whether loader thread is stopped
+        self._stopped = True
+        # Background thread
+        self._thread = None
 
         # Start reloading. This will load one initial time on the main thread,
         # then (if `reload_interval` and `yaml` options are passed) will reload
         # at interval forever in a background thread.
-        self._reload()
+        try:
+            self._reload()
+        except NoConfig:
+            log.warning("No feature path specified for Alligater.")
+        except NoReload:
+            log.warning("No reload interval specified for Alligater.")
 
         if not self._features:
-            print("[Warning] Alligater was instantiated without any features! Was this intentional?")
+            log.warning("Alligater was instantiated without any features! Was this intentional?")
 
     def __getattr__(self, feature_name):
         """Get a function that will evaluate the given feature.
@@ -105,13 +124,13 @@ class Alligater:
             Function that can be called with an `entity` to evaluate.
         """
         try:
-            with self._mtx:
+            with self._cv:
                 ft = self._features[feature_name]
             return partial(self, ft)
-        except KeyError:
-            raise MissingFeatureError(feature_name)
+        except KeyError as e:
+            raise MissingFeatureError(feature_name) from e
 
-    def __call__(self, feature, entity, silent=False, deferred=None):
+    async def __call__(self, feature, entity, silent=False, deferred=None):
         """Evaluate an entity against the given feature.
 
         Args:
@@ -125,7 +144,7 @@ class Alligater:
             Wrapped value of the variant to return.
         """
         logger = self._logger if not silent else None
-        value = feature(entity, log=logger, sticky=self._sticky)
+        value = await feature(entity, log=logger, sticky=self._sticky)
         # Note that Logger implementations that aren't DeferrableLoggers
         # log immediately and calling `log` is just a no-op.
         if value.call_type == CallType.ASSIGNMENT:
@@ -137,15 +156,40 @@ class Alligater:
 
         return value
 
+    def stop(self):
+        """Stop the background reloader."""
+        # Make sure that the logger stops if it can.
+        if self._logger and hasattr(self._logger, 'stop'):
+            self._logger.stop()
+
+        # Stop internal loader thread if necessary.
+        if self._stopped or not self._thread:
+            return
+
+        with self._cv:
+            self._stopped = True
+            self._cv.notify_all()
+        self._thread.join()
+        self._thread = None
+
     def _reload(self):
         """Start a background process to reload YAML at an interval."""
+        if not self._stopped or self._thread:
+            log.warning("Called _reload when Alligater was already reloading")
+            return
+
         # Force a synchronous run of the loader on the main thread
+        # If this fails, it'll throw an error on the main thread.
         self._run_reload(once=True)
 
         # Start a background loader to reload at interval.
+        if not self._reload_interval:
+            raise NoReload("No reload interval passed; reloader will not run")
         thread = threading.Thread(target=self._run_reload, args=())
-        thread.daemon = True
+        self._stopped = False
+        self._thread = thread
         thread.start()
+        atexit.register(self.stop)
 
     def _run_reload(self, once=False):
         """Background worker to reload features from YAML.
@@ -154,22 +198,22 @@ class Alligater:
             once - Whether to force the loader to run only once, immediately.
         """
         while True:
-            # Don't sleep if this is a one-time run.
-            if not once:
-                if not self._reload_interval:
-                    print("[Warning] No reload interval passed; (re)loader is exiting.")
-                    return
-                time.sleep(self._reload_interval)
+            with self._cv:
+                # Don't sleep if this is a one-time run.
+                if not once:
+                    self._cv.wait(timeout=self._reload_interval)
+                    if self._stopped:
+                        return
 
-            if not self._yaml:
-                print("[Warning] No YAML path is specified; (re)loader is exiting.")
-                return
+                if not self._yaml:
+                    raise NoConfig("No YAML path is specified; (re)loader is exiting.")
 
-            try:
-                yaml_str = load_config(self._yaml, **self._loader_kwargs)
-                new_sum = self._checksum(yaml_str)
-                if new_sum != self._old_sum:
-                    with self._mtx:
+                try:
+                    log.debug("Checking for new features ...")
+                    yaml_str = load_config(self._yaml, **self._loader_kwargs)
+                    new_sum = self._checksum(yaml_str)
+                    if new_sum != self._old_sum:
+                        log.debug("New features found!")
                         # NOTE: When features are reloaded, they are **not**
                         # merged with the _current_ list of features, they are
                         # always merged with the original hardcoded list. This
@@ -177,14 +221,19 @@ class Alligater:
                         # merged with the current list, transient mistakes in
                         # a config could propagate forever.
                         self._features = parse_yaml(yaml_str,
-                                default_features=self._original_features)
+                                default_features=self._original_features,
+                                raise_exceptions=once)
                         self._old_sum = new_sum
-            except Exception as e:
-                print("[Warning] Alligater loader encountered an error:", e)
-
-            # Exit if this is a one-time deal.
-            if once:
-                return
+                        log.debug("Updated to {}!".format(new_sum))
+                        if once:
+                            return
+                    else:
+                        log.debug("No new features found")
+                except Exception as e:
+                    if once:
+                        raise LoadError("Failed to load feature spec") from e
+                    else:
+                        log.error("Alligater loader encountered an error: {}".format(e))
 
     def _checksum(self, s):
         """Compute checksum of a string.
@@ -210,4 +259,6 @@ __all__ = [
         'func',
         'field',
         'events',
+        'seed',
+        'log',
         ]
