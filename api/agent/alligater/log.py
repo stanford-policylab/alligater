@@ -15,8 +15,10 @@ from datetime import datetime, timezone
 import alligater.events as events
 from .common import simple_object, encode_json, get_uuid
 
+
+
 # Sys log (different than feature trace log)
-log = logging.getLogger("alligater")
+log = logging.getLogger("nudge.alligater")
 
 
 default_now = lambda: datetime.now(timezone.utc)
