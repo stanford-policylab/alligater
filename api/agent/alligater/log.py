@@ -158,7 +158,7 @@ class ObjectLogger(DeferrableLogger):
     def _drain(self, *args):
         """Stop worker threads and drain the queue."""
         if not self._stopped:
-            log.debug("Stopping log write workers ...")
+            log.debug("🙉 Stopping log write workers ...")
             with self._cv:
                 self._stopped = True
                 self._cv.notify_all()
@@ -170,7 +170,7 @@ class ObjectLogger(DeferrableLogger):
             if not self._finished:
                 return
 
-            log.debug("Draining pending logs ...")
+            log.debug("🪵 Draining pending logs ...")
             while len(self._finished) > 0:
                 event = self._finished.pop(0)
                 try:
@@ -197,7 +197,7 @@ class ObjectLogger(DeferrableLogger):
         try:
             self._write(event)
         except Exception as e:
-            log.error("Failed to write event: {}".format(e))
+            log.error("😓 Failed to write event: {}".format(e))
 
 
 class NetworkLogger(ObjectLogger):
@@ -310,7 +310,7 @@ class NetworkLogger(ObjectLogger):
         if not self._debug:
             return
 
-        log.debug(args[0].format(*args[1:]))
+        log.debug("🪵 " + args[0].format(*args[1:]))
 
 
 class PrintLogger:

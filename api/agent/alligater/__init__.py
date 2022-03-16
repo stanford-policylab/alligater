@@ -16,6 +16,8 @@ from .common import (
         NoConfig,
         NoReload,
         LoadError,
+        encode_json,
+        simple_object,
         )
 from .parse import parse_yaml, load_config
 from .value import Value, CallType
@@ -74,6 +76,7 @@ class Alligater:
             loader_kwargs - Arguments to pass to the config loader. See the
             method in `parse.py` for details.
         """
+        log.info("🐊 Loading alligater ...")
 
         if type(features) is list:
             features = {f.name: f for f in features}
@@ -107,12 +110,12 @@ class Alligater:
         try:
             self._reload()
         except NoConfig:
-            log.warning("No feature path specified for Alligater.")
+            log.warning("😭 No feature path specified for Alligater.")
         except NoReload:
-            log.warning("No reload interval specified for Alligater.")
+            log.warning("😤 No reload interval specified for Alligater.")
 
         if not self._features:
-            log.warning("Alligater was instantiated without any features! Was this intentional?")
+            log.warning("🤬 Alligater was instantiated without any features! Was this intentional?")
 
     def __getattr__(self, feature_name):
         """Get a function that will evaluate the given feature.
@@ -175,7 +178,7 @@ class Alligater:
     def _reload(self):
         """Start a background process to reload YAML at an interval."""
         if not self._stopped or self._thread:
-            log.warning("Called _reload when Alligater was already reloading")
+            log.warning("👀 Called _reload when Alligater was already reloading")
             return
 
         # Force a synchronous run of the loader on the main thread
@@ -209,11 +212,11 @@ class Alligater:
                     raise NoConfig("No YAML path is specified; (re)loader is exiting.")
 
                 try:
-                    log.debug("Checking for new features ...")
+                    log.debug("🕵️‍♀️ Checking for new features ...")
                     yaml_str = load_config(self._yaml, **self._loader_kwargs)
                     new_sum = self._checksum(yaml_str)
                     if new_sum != self._old_sum:
-                        log.debug("New features found!")
+                        log.debug("🎉 New features found!")
                         # NOTE: When features are reloaded, they are **not**
                         # merged with the _current_ list of features, they are
                         # always merged with the original hardcoded list. This
@@ -224,16 +227,16 @@ class Alligater:
                                 default_features=self._original_features,
                                 raise_exceptions=once)
                         self._old_sum = new_sum
-                        log.debug("Updated to {}!".format(new_sum))
+                        log.debug("☺️ Updated to {}!".format(new_sum))
                         if once:
                             return
                     else:
-                        log.debug("No new features found")
+                        log.debug("😔 No new features found")
                 except Exception as e:
                     if once:
                         raise LoadError("Failed to load feature spec") from e
                     else:
-                        log.error("Alligater loader encountered an error: {}".format(e))
+                        log.error("😫 Alligater loader encountered an error: {}".format(e))
 
     def _checksum(self, s):
         """Compute checksum of a string.
@@ -261,4 +264,6 @@ __all__ = [
         'events',
         'seed',
         'log',
+        'encode_json',
+        'simple_object',
         ]

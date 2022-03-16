@@ -274,7 +274,7 @@ def parse_yaml(s, default_features=None, raise_exceptions=False):
         if default_features is None or raise_exceptions:
             raise InvalidConfigError(str(e)) from e
         else:
-            log.warning("Failed to load features from YAML: {}".format(e))
+            log.warning("😖 Failed to load features from YAML: {}".format(e))
             traceback.print_exc()
             return default_features
 
