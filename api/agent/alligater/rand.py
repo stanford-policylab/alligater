@@ -1,9 +1,9 @@
 import random
-from typing import Optional
+from typing import Optional, Union
 
 
 
-_rand = random.SystemRandom()
+_rand: Union[random.Random, random.SystemRandom] = random.SystemRandom()
 
 
 def seed(num: Optional[int]=None):

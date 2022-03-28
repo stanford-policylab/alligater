@@ -23,7 +23,7 @@ class _MetaExpression(type):
         """
         return _ComposedExpression(self, other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__name__
 
 
@@ -285,7 +285,7 @@ class Eq(_InfixExpression):
         return result
 
 
-Ne = Not[Eq]
+Ne = Not[Eq] # type: ignore
 """Not equals operator."""
 
 
@@ -313,11 +313,11 @@ class Le(_InfixExpression):
         return result
 
 
-Gt = Not[Le]
+Gt = Not[Le] # type: ignore
 """Greater than operator."""
 
 
-Ge = Not[Lt]
+Ge = Not[Lt] # type: ignore
 """Greater than or equal to operator."""
 
 

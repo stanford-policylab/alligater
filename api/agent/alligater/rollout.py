@@ -20,7 +20,7 @@ class Rollout:
     DEFAULT = "default"
 
     # Placeholder to check if the default randomizer should be used.
-    DEFAULT_RANDOMIZER = {}
+    DEFAULT_RANDOMIZER = "__default__"
 
     def __init__(self,
             name=DEFAULT,

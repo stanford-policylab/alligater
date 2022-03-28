@@ -5,7 +5,7 @@ import yaml
 try:
     from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader
+    from yaml import Loader # type: ignore
 
 from .common import InvalidConfigError
 from .population import Population
