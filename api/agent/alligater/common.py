@@ -1,3 +1,4 @@
+from typing import Any
 import collections.abc
 import dataclasses
 import json
@@ -14,7 +15,8 @@ from .rand import getrandbits
 MAX_DOUBLE = float(0xFFFFFFFFFFFFFFFF)
 
 
-def get_uuid():
+
+def get_uuid() -> str:
     """Get a UUID (v4).
 
     In tests this can be made deterministic either by patching or seeding the
@@ -27,7 +29,7 @@ def get_uuid():
     return str(uuid.UUID(int=getrandbits(128)))
 
 
-def hash_id(s):
+def hash_id(s: str) -> float:
     """Compute the hash of the given ID as a float.
 
     This can be used instead of a PRNG to compute get the effect of random
@@ -52,7 +54,7 @@ def hash_id(s):
     return mmh3.hash64(s, signed=False)[0] / MAX_DOUBLE
 
 
-def is_non_string_iterable(c):
+def is_non_string_iterable(c: Any) -> bool:
     """Check if this is a collection (but not a string).
 
     Args:
@@ -61,7 +63,7 @@ def is_non_string_iterable(c):
     return isinstance(c, collections.abc.Iterable) and not isinstance(c, str)
 
 
-def get_entity_field(entity, field_name):
+def get_entity_field(entity: Any, field_name: str) -> Any:
     """Quietly get a field from an entity.
 
     Entity can either use dot property access or brackets as a dict.
@@ -86,7 +88,7 @@ def get_entity_field(entity, field_name):
     return result
 
 
-def simple_object(value, with_type=False):
+def simple_object(value: Any, with_type=False):
     """Try to simplify an arbitrary object to a simple object.
 
     Args:
@@ -124,7 +126,7 @@ def simple_object(value, with_type=False):
             }
 
 
-def _json_default_encoder(obj):
+def _json_default_encoder(obj: Any) -> str:
     """Default serializer to user with json.dumps.
 
     Args:
@@ -138,7 +140,7 @@ def _json_default_encoder(obj):
     return str(obj)
 
 
-def encode_json(data):
+def encode_json(data: Any) -> str:
     """Encode object as json.
 
     Calls json.dumps with a good serializer.

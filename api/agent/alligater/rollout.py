@@ -1,5 +1,7 @@
+from typing import cast, Optional, Sequence, Union, Any
+
 from .common import ValidationError, get_entity_field
-from .population import Population
+from .population import Population, PopulationSelector
 from .arm import Arm
 import alligater.field as field
 import alligater.func as func
@@ -23,10 +25,11 @@ class Rollout:
     DEFAULT_RANDOMIZER = "__default__"
 
     def __init__(self,
-            name=DEFAULT,
-            population=Population.DEFAULT,
-            arms=None,
-            randomizer=DEFAULT_RANDOMIZER,
+            name: str = DEFAULT,
+            population: Union[PopulationSelector, str] = Population.DEFAULT,
+            arms: Optional[Sequence[Union[str, Arm]]] = None,
+            randomizer: Union[str, func._Expression] = DEFAULT_RANDOMIZER,
+            sticky: Optional[bool] = None,
             ):
         """Construct a new Rollout.
 
@@ -46,8 +49,9 @@ class Rollout:
         self.population = self._get_population(population)
         self.arms = self._get_arms(arms)
         self.randomize = self._get_randomizer(randomizer)
+        self.sticky = sticky
 
-    def _get_population(self, population):
+    def _get_population(self, population: Union[PopulationSelector, str]) -> PopulationSelector:
         """Get the full population configuration.
 
         Args:
@@ -69,9 +73,10 @@ class Rollout:
                 return Population.DEFAULT
             raise ValueError("Invalid population name {}".format(population))
 
-        return population
+        # Guaranteed to be a real population at this point, not a string
+        return cast(PopulationSelector, population)
 
-    def _get_arms(self, arms):
+    def _get_arms(self, arms: Optional[Sequence[Union[str, Arm]]]) -> list[Arm]:
         """Get a list of fully-specified arms.
 
         Since arms can either be a string or an Arm, and the Arm's weight is
@@ -102,19 +107,22 @@ class Rollout:
 
         remainder = 1.0
         unknown = len(arms)
-        result = [None] * len(arms)
+        temp_result: list[Optional[Arm]] = [None] * len(arms)
 
         for i, arm in enumerate(arms):
             if type(arm) is str:
-                result[i] = Arm(arm)
+                temp_result[i] = Arm(arm)
             elif type(arm) is Arm:
-                result[i] = arm
+                temp_result[i] = arm
                 weight = arm.weight
                 if weight is not None:
                     remainder -= weight
                     unknown -= 1
             else:
                 raise ValueError("Unexpected type for arm: {}".format(type(arm)))
+
+        # All slots are guaranteed to be filled at this point.
+        result = cast(list[Arm], temp_result)
 
         # Divide remaining weight evenly among the unspecified arms.
         unk_weight = remainder / float(unknown) if unknown > 0 else 0.
@@ -126,7 +134,7 @@ class Rollout:
 
         return result
 
-    def _get_randomizer(self, randomizer):
+    def _get_randomizer(self, randomizer: Union[str, func._Expression]) -> func._Expression:
         """Get the randomization function to use.
 
         Args:
@@ -135,11 +143,13 @@ class Rollout:
         Returns:
             A randomization function
         """
-        if randomizer is self.DEFAULT_RANDOMIZER:
-            return func.Hash(func.Concat(self.name, ":", field.ID))
-        return randomizer
+        if type(randomizer) is str:
+            if randomizer == self.DEFAULT_RANDOMIZER:
+                return func.Hash(func.Concat(self.name, ":", field.ID))
+            raise ValueError(f"Unknown randomizer {randomizer}")
+        return cast(func._Expression, randomizer)
 
-    def validate(self, variants):
+    def validate(self, variants: dict[str, Any]):
         """Ensure configuration makes sense.
 
         Args:
@@ -177,7 +187,7 @@ class Rollout:
         if not callable(self.randomize):
             raise ValidationError("Expected randomization function to be callable")
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Rollout):
             return False
 
@@ -186,21 +196,27 @@ class Rollout:
                 self.population == other.population,
                 self.arms == other.arms,
                 self.randomize == other.randomize,
+                self.sticky == other.sticky,
                 ])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Rollout name={}>".format(self.name)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
                 'type': 'Rollout',
                 'name': self.name,
                 'arms': [a.to_dict() for a in self.arms],
                 'population': self.population.to_dict(),
                 'randomizer': str(self.randomize),
+                'sticky': self.sticky,
                 }
 
-    def __call__(self, call_id, entity, log=None):
+    def __call__(self,
+            call_id: str,
+            entity: dict,
+            log: Optional[events.EventLogger] = None,
+            ) -> Optional[str]:
         """Apply this rollout to the given entity.
 
         Args:

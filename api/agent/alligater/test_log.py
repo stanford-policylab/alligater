@@ -11,6 +11,10 @@ from datetime import datetime, timezone
 from .log import ObjectLogger, NetworkLogger
 from .feature import Feature
 from .variant import Variant
+from .rollout import Rollout
+from .population import Population
+from .arm import Arm
+from .common import NoAssignment
 
 
 
@@ -104,6 +108,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                         'type': 'Population',
                         },
                     'randomizer': "Hash(Concat('default', ':', $id))",
+                    'sticky': None,
                     'type': 'Rollout',
                     }],
                 'type': 'Feature',
@@ -120,6 +125,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
             'assignment': 'Foo',
             'repeat': False,
             'trace': None,
+            'sticky': False,
             }
 
         write.assertWritten([log1])
@@ -169,6 +175,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                         'type': 'Population',
                         },
                     'randomizer': "Hash(Concat('default', ':', $id))",
+                    'sticky': None,
                     'type': 'Rollout',
                     }],
                 'type': 'Feature',
@@ -183,6 +190,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                 },
             'variant': {'name': 'foo', 'nested': False, 'type': 'Variant', 'value': 'Foo'},
             'assignment': 'Foo',
+            'sticky': False,
             'trace': [
                 {'type': 'EnterGate', 'data': {'feature': 'test_feature'}},
                 {'type': 'EnterFeature', 'data': {'feature': 'test_feature'}},
@@ -219,7 +227,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                     },
                 {'type': 'LeaveArm', 'data': {'matched': True}},
                 {'type': 'LeaveRollout', 'data': {'member': True}},
-                {'type': 'ChoseVariant', 'data': {'variant': 'foo'}},
+                {'type': 'ChoseVariant', 'data': {'variant': 'foo', 'sticky': False}},
                 {'type': 'EnterVariant', 'data': {'variant': 'foo'}},
                 {'type': 'LeaveVariant', 'data': {'value': 'Foo'}},
                 {'type': 'LeaveFeature', 'data': {'value': 'Foo'}},
@@ -263,6 +271,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                         'type': 'Population',
                         },
                     'randomizer': "Hash(Concat('default', ':', $id))",
+                    'sticky': None,
                     'type': 'Rollout',
                     }],
                 'type': 'Feature',
@@ -276,6 +285,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                     },
                 },
             'repeat': True,
+            'sticky': True,
             'variant': {'name': 'stickyvariant'},
             'assignment': 'sticky',
             'trace': [
@@ -286,6 +296,339 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                 {'type': 'LeaveGate', 'data': {'value': 'sticky'}},
                 ],
             }])
+
+    async def test_log_sticky_trace_new(self):
+        """Sticky function is passed but returns nothing in this case."""
+        f = Feature(
+                'test_feature',
+                variants=[Variant('foo', 'Foo')],
+                default_arm='foo',
+                )
+
+        write = MockWriter()
+
+        def sticker(f, e):
+            raise NoAssignment
+
+        v = await f(User("two"),
+                sticky=sticker,
+                log=ObjectLogger(write, now=mock_now, trace=True))
+        v.log()
+
+        write.assertWritten([{
+            'ts': fake_now,
+            'call_id': 'e3e70682-c209-4cac-629f-6fbed82c07cd',
+            'entity': {
+                'type': 'User',
+                'value': {
+                    'id': 'two',
+                    },
+                },
+            'feature': {
+                'name': 'test_feature',
+                'rollouts': [{
+                    'arms': [{
+                        'type': 'Arm',
+                        'variant': 'foo',
+                        'weight': 1.0,
+                        }],
+                    'name': 'default',
+                    'population': {
+                        'name': 'Default',
+                        'type': 'Population',
+                        },
+                    'randomizer': "Hash(Concat('default', ':', $id))",
+                    'sticky': None,
+                    'type': 'Rollout',
+                    }],
+                'type': 'Feature',
+                'variants': {
+                    'foo': {
+                        'name': 'foo',
+                        'nested': False,
+                        'type': 'Variant',
+                        'value': 'Foo',
+                        },
+                    },
+                },
+            'repeat': False,
+            'sticky': True,
+            'variant': {
+                'name': 'foo',
+                'nested': False,
+                'type': 'Variant',
+                'value': 'Foo',
+                },
+            'assignment': 'Foo',
+            'trace': [
+                {'type': 'EnterGate', 'data': {'feature': 'test_feature'}},
+                {'type': 'EnterFeature', 'data': {'feature': 'test_feature'}},
+                {'type': 'StickyAssignment', 'data': {'variant': None, 'value': None, 'assigned': False}},
+                {'type': 'EnterRollout', 'data': {'rollout': 'default'}},
+                {'type': 'EvaluatePopulation', 'data': {
+                    'member': True,
+                    'population': 'Default',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': '_Field',
+                    'args': [{'id': 'two'}, 'id'],
+                    'result': 'two',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': 'Concat',
+                    'args': ['default', ':', 'two'],
+                    'result': 'default:two',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': 'Hash',
+                    'args': ['default:two'],
+                    'result': 0.7560122309797355,
+                    }},
+                {'type': 'Randomize', 'data': {
+                    'function': "Hash(Concat('default', ':', $id))",
+                    'result': 0.7560122309797355,
+                    }},
+                {'type': 'EnterArm',
+                    'data': {
+                        'arm': {'type': 'Arm', 'variant': 'foo', 'weight': 1.0},
+                        'cutoff': 1.0,
+                        'x': 0.7560122309797355,
+                        },
+                    },
+                {'type': 'LeaveArm', 'data': {'matched': True}},
+                {'type': 'LeaveRollout', 'data': {'member': True}},
+                {'type': 'ChoseVariant', 'data': {'variant': 'foo', 'sticky': True}},
+                {'type': 'EnterVariant', 'data': {'variant': 'foo'}},
+                {'type': 'LeaveVariant', 'data': {'value': 'Foo'}},
+                {'type': 'LeaveFeature', 'data': {'value': 'Foo'}},
+                {'type': 'LeaveGate', 'data': {'value': 'Foo'}},
+                ],
+            }])
+
+    async def test_log_sticky_rollout_override_on(self):
+        """Sticky function is not passed, but stipulated by rollout.
+
+        This situation is a little bit fishy, but we technically allow it.
+        """
+        f = Feature(
+                'test_feature',
+                variants=[Variant('foo', 'Foo')],
+                rollouts=[Rollout(
+                    sticky=True,
+                    name=Rollout.DEFAULT,
+                    population=Population.DEFAULT,
+                    arms=[Arm('foo', weight=1.0)],
+                    )],
+                )
+
+        write = MockWriter()
+
+        v = await f(User("two"),
+                log=ObjectLogger(write, now=mock_now, trace=True))
+        v.log()
+
+        write.assertWritten([{
+            'ts': fake_now,
+            'call_id': 'e3e70682-c209-4cac-629f-6fbed82c07cd',
+            'entity': {
+                'type': 'User',
+                'value': {
+                    'id': 'two',
+                    },
+                },
+            'feature': {
+                'name': 'test_feature',
+                'rollouts': [{
+                    'arms': [{
+                        'type': 'Arm',
+                        'variant': 'foo',
+                        'weight': 1.0,
+                        }],
+                    'name': 'default',
+                    'population': {
+                        'name': 'Default',
+                        'type': 'Population',
+                        },
+                    'randomizer': "Hash(Concat('default', ':', $id))",
+                    'sticky': True,
+                    'type': 'Rollout',
+                    }],
+                'type': 'Feature',
+                'variants': {
+                    'foo': {
+                        'name': 'foo',
+                        'nested': False,
+                        'type': 'Variant',
+                        'value': 'Foo',
+                        },
+                    },
+                },
+            'repeat': False,
+            'sticky': True,
+            'variant': {
+                'name': 'foo',
+                'nested': False,
+                'type': 'Variant',
+                'value': 'Foo',
+                },
+            'assignment': 'Foo',
+            'trace': [
+                {'type': 'EnterGate', 'data': {'feature': 'test_feature'}},
+                {'type': 'EnterFeature', 'data': {'feature': 'test_feature'}},
+                {'type': 'EnterRollout', 'data': {'rollout': 'default'}},
+                {'type': 'EvaluatePopulation', 'data': {
+                    'member': True,
+                    'population': 'Default',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': '_Field',
+                    'args': [{'id': 'two'}, 'id'],
+                    'result': 'two',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': 'Concat',
+                    'args': ['default', ':', 'two'],
+                    'result': 'default:two',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': 'Hash',
+                    'args': ['default:two'],
+                    'result': 0.7560122309797355,
+                    }},
+                {'type': 'Randomize', 'data': {
+                    'function': "Hash(Concat('default', ':', $id))",
+                    'result': 0.7560122309797355,
+                    }},
+                {'type': 'EnterArm',
+                    'data': {
+                        'arm': {'type': 'Arm', 'variant': 'foo', 'weight': 1.0},
+                        'cutoff': 1.0,
+                        'x': 0.7560122309797355,
+                        },
+                    },
+                {'type': 'LeaveArm', 'data': {'matched': True}},
+                {'type': 'LeaveRollout', 'data': {'member': True}},
+                {'type': 'ChoseVariant', 'data': {'variant': 'foo', 'sticky': True}},
+                {'type': 'EnterVariant', 'data': {'variant': 'foo'}},
+                {'type': 'LeaveVariant', 'data': {'value': 'Foo'}},
+                {'type': 'LeaveFeature', 'data': {'value': 'Foo'}},
+                {'type': 'LeaveGate', 'data': {'value': 'Foo'}},
+                ],
+            }])
+
+    async def test_log_sticky_rollout_override_off(self):
+        """Sticky function is passed, but rollout turns it off."""
+        f = Feature(
+                'test_feature',
+                variants=[Variant('foo', 'Foo')],
+                rollouts=[Rollout(
+                    sticky=False,
+                    name=Rollout.DEFAULT,
+                    population=Population.DEFAULT,
+                    arms=[Arm('foo', weight=1.0)],
+                    )],
+                )
+
+        write = MockWriter()
+
+        def sticker(f, e):
+            raise NoAssignment
+
+        v = await f(User("two"),
+                sticky=sticker,
+                log=ObjectLogger(write, now=mock_now, trace=True))
+        v.log()
+
+        write.assertWritten([{
+            'ts': fake_now,
+            'call_id': 'e3e70682-c209-4cac-629f-6fbed82c07cd',
+            'entity': {
+                'type': 'User',
+                'value': {
+                    'id': 'two',
+                    },
+                },
+            'feature': {
+                'name': 'test_feature',
+                'rollouts': [{
+                    'arms': [{
+                        'type': 'Arm',
+                        'variant': 'foo',
+                        'weight': 1.0,
+                        }],
+                    'name': 'default',
+                    'population': {
+                        'name': 'Default',
+                        'type': 'Population',
+                        },
+                    'randomizer': "Hash(Concat('default', ':', $id))",
+                    'sticky': False,
+                    'type': 'Rollout',
+                    }],
+                'type': 'Feature',
+                'variants': {
+                    'foo': {
+                        'name': 'foo',
+                        'nested': False,
+                        'type': 'Variant',
+                        'value': 'Foo',
+                        },
+                    },
+                },
+            'repeat': False,
+            'sticky': False,
+            'variant': {
+                'name': 'foo',
+                'nested': False,
+                'type': 'Variant',
+                'value': 'Foo',
+                },
+            'assignment': 'Foo',
+            'trace': [
+                {'type': 'EnterGate', 'data': {'feature': 'test_feature'}},
+                {'type': 'EnterFeature', 'data': {'feature': 'test_feature'}},
+                {'type': 'StickyAssignment', 'data': {'variant': None, 'value': None, 'assigned': False}},
+                {'type': 'EnterRollout', 'data': {'rollout': 'default'}},
+                {'type': 'EvaluatePopulation', 'data': {
+                    'member': True,
+                    'population': 'Default',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': '_Field',
+                    'args': [{'id': 'two'}, 'id'],
+                    'result': 'two',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': 'Concat',
+                    'args': ['default', ':', 'two'],
+                    'result': 'default:two',
+                    }},
+                {'type': 'EvalFunc', 'data': {
+                    'f': 'Hash',
+                    'args': ['default:two'],
+                    'result': 0.7560122309797355,
+                    }},
+                {'type': 'Randomize', 'data': {
+                    'function': "Hash(Concat('default', ':', $id))",
+                    'result': 0.7560122309797355,
+                    }},
+                {'type': 'EnterArm',
+                    'data': {
+                        'arm': {'type': 'Arm', 'variant': 'foo', 'weight': 1.0},
+                        'cutoff': 1.0,
+                        'x': 0.7560122309797355,
+                        },
+                    },
+                {'type': 'LeaveArm', 'data': {'matched': True}},
+                {'type': 'LeaveRollout', 'data': {'member': True}},
+                {'type': 'ChoseVariant', 'data': {'variant': 'foo', 'sticky': False}},
+                {'type': 'EnterVariant', 'data': {'variant': 'foo'}},
+                {'type': 'LeaveVariant', 'data': {'value': 'Foo'}},
+                {'type': 'LeaveFeature', 'data': {'value': 'Foo'}},
+                {'type': 'LeaveGate', 'data': {'value': 'Foo'}},
+                ],
+            }])
+
 
 
 class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
@@ -337,6 +680,7 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
                         'type': 'Population',
                         },
                     'randomizer': "Hash(Concat('default', ':', $id))",
+                    'sticky': None,
                     'type': 'Rollout',
                     }],
                 'type': 'Feature',
@@ -353,6 +697,7 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
             'assignment': 'Foo',
             'trace': None,
             'repeat': False,
+            'sticky': False,
             }
 
     @responses.activate

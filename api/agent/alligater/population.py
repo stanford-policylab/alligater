@@ -1,3 +1,6 @@
+import abc
+from typing import Any, Optional
+
 from .common import ValidationError
 import alligater.func as func
 import alligater.field as field
@@ -5,7 +8,23 @@ import alligater.events as events
 
 
 
-class DefaultSelector:
+class PopulationSelector(abc.ABC):
+
+    @abc.abstractmethod
+    def validate(self):
+        ...
+
+    @abc.abstractmethod
+    def __call__(self, call_id: str, entity: Any, log: Optional[events.EventLogger]) -> bool:
+        ...
+
+    @abc.abstractmethod
+    def to_dict(self) -> dict:
+        ...
+
+
+
+class DefaultSelector(PopulationSelector):
     """Selector for 100% of the population."""
 
     def validate(self):
@@ -41,7 +60,7 @@ class DefaultSelector:
                 }
 
 
-class ExpressionSelector:
+class ExpressionSelector(PopulationSelector):
     """Selector for a segment of a population based on the given Expression."""
 
     def __init__(self, expression):
@@ -133,6 +152,7 @@ class ExplicitSelector(ExpressionSelector):
         self.ids = ids
         expression = id_field.in_(ids)
         super().__init__(expression)
+
 
 
 class Population:

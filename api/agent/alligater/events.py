@@ -1,4 +1,21 @@
+from typing import Any, Sequence, Optional
+import abc
+
 from .common import ValidationError, simple_object
+
+
+
+class EventLogger(abc.ABC):
+    """Base class to define a logger."""
+
+    @abc.abstractmethod
+    def __call__(self, event: '_EventInstance'):
+        """Log the given event.
+
+        Args:
+            event - instantiated event
+        """
+        ...
 
 
 
@@ -8,7 +25,7 @@ class _EventInstance:
     The fields available depend on the event.
     """
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs):
         self.name = name
         self.args = kwargs
 
@@ -19,7 +36,7 @@ class _EventInstance:
     def __repr__(self):
         return f"<EventInstance {str(self)}>"
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         try:
             return self.args[attr]
         except KeyError:
@@ -28,7 +45,7 @@ class _EventInstance:
     def __eq__(self, other):
         return self.name == repr(other)
 
-    def asdict(self, exclude=None, compress=False):
+    def asdict(self, exclude: Optional[dict] = None, compress=False) -> dict:
         """Convert object to a simple dictionary.
 
         Args:
@@ -41,9 +58,9 @@ class _EventInstance:
         Returns:
             Dictionary of values
         """
-        d = {
+        d: dict[str, Any] = {
                 'type': self.name,
-                'data': {},
+                'data': dict[str, Any](),
                 }
 
         for k, v in self.args.items():
@@ -62,13 +79,13 @@ class _EventInstance:
 class _Event:
     """An abstract event for building loggers."""
 
-    def __init__(self, name, slots=None):
+    def __init__(self, name: str, slots: Optional[Sequence[str]] = None):
         self.name = name
         slots = list(slots or [])
         slots.append('call_id')
         self.slots = tuple(slots)
 
-    def __call__(self, log, **kwargs):
+    def __call__(self, log: Optional[EventLogger], **kwargs):
         if not log:
             return
 
@@ -129,11 +146,12 @@ Attributes:
 """
 
 
-ChoseVariant = _Event("ChoseVariant", ("variant",))
+ChoseVariant = _Event("ChoseVariant", ("variant", "sticky",))
 """ChoseVariant is fired when a Variant is selected.
 
 Attributes:
     variant - The Variant that was selected.
+    sticky - Whether the assignment should be stored permanently.
 """
 
 

@@ -1,3 +1,4 @@
+from typing import cast, Any, Optional, Union, Callable, Awaitable, TYPE_CHECKING
 import asyncio
 
 from .common import ValidationError, NoAssignment, get_uuid
@@ -5,7 +6,25 @@ from .rollout import Rollout
 from .population import Population
 from .arm import Arm
 from .value import Value, CallType
+from .log import log as iolog
 import alligater.events as events
+
+if TYPE_CHECKING:
+    from .variant import Variant
+
+
+
+ExistingAssignment = tuple[str, Any]
+"""An existing variant name / value that has been assigned."""
+
+AsyncAssignmentFetcher = Callable[['Feature', Any], Awaitable[ExistingAssignment]]
+"""Fetch assignments asynchronously."""
+
+SyncAssignmentFetcher = Callable[['Feature', Any], ExistingAssignment]
+"""Fetch assignments synchronously."""
+
+AssignmentFetcher = Union[AsyncAssignmentFetcher, SyncAssignmentFetcher]
+"""Function to fetch existing assignments for a given feature/entity."""
 
 
 
@@ -32,9 +51,9 @@ class Feature:
 
     def __init__(self,
             name: str,
-            variants = None,
-            rollouts = None,
-            default_arm = None,
+            variants: Optional[list['Variant']] = None,
+            rollouts: Optional[list[Rollout]] = None,
+            default_arm: Optional[Union[str, Arm]] = None,
             ):
         """Create a new feature gate.
 
@@ -60,16 +79,17 @@ class Feature:
 
         # Create a default rollout if one was specified
         if default_arm:
-            if type(default_arm) is str:
-                default_arm = Arm(default_arm, weight=1.0)
+            real_default_arm = Arm(default_arm, weight=1.0) \
+                    if type(default_arm) is str \
+                    else cast(Arm, default_arm)
 
-            if default_arm.weight is None:
-                default_arm.weight = 1.0
+            if real_default_arm.weight is None:
+                real_default_arm.weight = 1.0
 
             default_rollout = Rollout(
                     name=Rollout.DEFAULT,
                     population=Population.DEFAULT,
-                    arms=[default_arm],
+                    arms=[real_default_arm],
                     )
             self.rollouts.append(default_rollout)
 
@@ -99,7 +119,7 @@ class Feature:
 
         [r.validate(self.variants) for r in self.rollouts]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Feature):
             return False
 
@@ -109,10 +129,10 @@ class Feature:
             self.rollouts == other.rollouts,
             ])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Feature name={}>".format(self.name)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
                 'type': 'Feature',
                 'name': self.name,
@@ -120,7 +140,11 @@ class Feature:
                 'rollouts': [r.to_dict() for r in self.rollouts],
                 }
 
-    async def __call__(self, entity, log=None, call_id=None, sticky=None):
+    async def __call__(self,
+            entity: Any,
+            log: Optional[events.EventLogger] = None,
+            call_id: Optional[str] = None,
+            sticky: Optional[AssignmentFetcher] = None) -> Value[Any]:
         """Apply the gate to the given entity.
 
         Args:
@@ -150,9 +174,9 @@ class Feature:
             has_assignment = False
             try:
                 if asyncio.iscoroutinefunction(sticky):
-                    variant_name, value = await sticky(self, entity)
+                    variant_name, value = await cast(AsyncAssignmentFetcher, sticky)(self, entity)
                 else:
-                    variant_name, value = sticky(self, entity)
+                    variant_name, value = cast(SyncAssignmentFetcher, sticky)(self, entity)
                 has_assignment = True
             except NoAssignment:
                 pass
@@ -179,12 +203,21 @@ class Feature:
                     return Value(value, call_id, CallType.EXPOSURE, log=log)
 
         for i, r in enumerate(self.rollouts):
-            variant_name = r(call_id, entity, log=log)
+            variant_name = r(cast(str, call_id), entity, log=log)
             if variant_name:
                 variant = self.variants[variant_name]
 
-                events.ChoseVariant(log, variant=variant, call_id=call_id)
+                # By default, this assignment will be permanent if we have a
+                # function for sticky assignments. This can be overridden at
+                # the rollout level, which can specify explicitly whether or
+                # not we want the assignment to be permanent.
+                is_sticky_assignment = bool(sticky) if r.sticky is None else r.sticky
+                if is_sticky_assignment and not sticky:
+                    iolog.warning(f'🏒 Rollout {r.name} requests a persistent (sticky) assignment, but no sticky assignment fetcher was passed into Alligater. This means assignments are probably being written but never read, which seems like an error in your code!')
+
+                events.ChoseVariant(log, variant=variant, sticky=is_sticky_assignment, call_id=call_id)
                 value = await variant(call_id, entity, log=log)
+
 
                 events.LeaveFeature(log, value=value, call_id=call_id)
                 if not nested:

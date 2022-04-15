@@ -1,7 +1,9 @@
+from typing import Any, Optional, TypeVar, Generic
 import math
 from enum import Enum
 
 from .log import DeferrableLogger
+from .events import EventLogger
 
 
 
@@ -10,7 +12,11 @@ class CallType(Enum):
     EXPOSURE = 'exposure'
 
 
-class Value:
+
+T = TypeVar('T')
+
+
+class Value(Generic[T]):
     """Wrapper for a value returned by a feature gate.
 
     The value is stored in the `value` property. It is immutable. The wrapper
@@ -24,7 +30,11 @@ class Value:
     If a log is deferred and never sent, it will be garbage collected.
     """
 
-    def __init__(self, value, call_id=None, call_type=CallType.ASSIGNMENT, log=None):
+    def __init__(self,
+            value: T,
+            call_id: Optional[str] = None,
+            call_type: CallType = CallType.ASSIGNMENT,
+            log: Optional[EventLogger] = None):
         self._value = value
         self._call_id = call_id
         self._call_type = call_type
@@ -37,12 +47,12 @@ class Value:
             self._log.drop_log(self._call_id)
 
     @property
-    def value(self):
+    def value(self) -> T:
         """Unwrap the internal value."""
         return self._value
 
     @property
-    def call_type(self):
+    def call_type(self) -> CallType:
         """Check the type of call (assignment vs exposure)."""
         return self._call_type
 

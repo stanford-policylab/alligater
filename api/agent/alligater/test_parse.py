@@ -180,6 +180,12 @@ FIXTURES = {
         default_arm=Arm("off"),
         rollouts=[
             Rollout(
+                name="temp_assignment_segment",
+                population=Population.Explicit(["id_temp"]),
+                arms=[Arm("off", weight=1.0)],
+                sticky=False,
+                ),
+            Rollout(
                 name="test_segment_1",
                 population=Population.Percent(0.2, "some_seed"),
                 arms=[
@@ -208,6 +214,14 @@ FIXTURES = {
             "off": null
           default_arm: "off"
           rollouts:
+            - name: temp_assignment_segment
+              sticky: false
+              population:
+                type: explicit
+                value: [id_temp]
+              arms:
+                - variant: "off"
+                  weight: 1.0
             - name: test_segment_1
               population:
                 type: percent

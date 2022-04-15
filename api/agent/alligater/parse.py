@@ -205,8 +205,8 @@ def _expand_feature(feature, default_feature=None):
 
     if 'default_arm' in feature:
         result['default_arm'] = _expand_default_arm(feature['default_arm'])
-        # If the new YAML specifies a default arm, make sure to clear out the
-        # any default rollout specified in the original feature.
+        # If the new YAML specifies a default arm, make sure to clear out any
+        # default rollout specified in the original feature.
         if 'rollouts' in result:
             result['rollouts'] = [r for r in result['rollouts']
                     if r['name'] != Rollout.DEFAULT]

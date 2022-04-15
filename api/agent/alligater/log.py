@@ -26,16 +26,16 @@ default_now = lambda: datetime.now(timezone.utc)
 
 
 
-class DeferrableLogger(abc.ABC):
+class DeferrableLogger(events.EventLogger):
     """Traits for a logger that can be deferred."""
 
     @abc.abstractmethod
-    def write_log(self, call_id):
+    def write_log(self, call_id: str):
         """Write the log with the given ID."""
         ...
 
     @abc.abstractmethod
-    def drop_log(self, call_id):
+    def drop_log(self, call_id: str):
         """Clear the log with the given ID without writing.
 
         This must be called to avoid memory leaks for dropped logs.
@@ -95,6 +95,7 @@ class ObjectLogger(DeferrableLogger):
                         'variant': '',
                         'trace': None if not self._trace else [],
                         'repeat': False,
+                        'sticky': False,
                         }
 
             if self._trace:
@@ -111,6 +112,7 @@ class ObjectLogger(DeferrableLogger):
                 # is defined as a tree. In that case this will be called
                 # multiple times, but only the last (leaf) variant will stick.
                 self._cache[call_id]['variant'] = simple_object(event.variant)
+                self._cache[call_id]['sticky'] = event.sticky
 
             # Get assigned variant from the sticky assignment if it exists.
             if event == events.StickyAssignment and event.assigned:
@@ -119,6 +121,7 @@ class ObjectLogger(DeferrableLogger):
                         'name': event.variant,
                         },
                     'repeat': True,
+                    'sticky': True,
                     })
 
             if event == events.LeaveGate:
@@ -313,10 +316,10 @@ class NetworkLogger(ObjectLogger):
         log.debug("🪵 " + args[0].format(*args[1:]))
 
 
-class PrintLogger:
+class PrintLogger(events.EventLogger):
     """Logger that dumps events and features from feature evaluation."""
 
-    def __init__(self, trace=False):
+    def __init__(self, trace: bool = False):
         """Create a new print logger.
 
         Args:
@@ -337,6 +340,10 @@ class PrintLogger:
 
         if trace:
             print(str(event))
+
+        if event == events.ChoseVariant:
+            print("Variant:", event.variant)
+            print("Sticky:", event.sticky)
 
         if event == events.LeaveGate:
             print("Assignment:", event.value)
