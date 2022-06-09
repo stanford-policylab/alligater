@@ -36,6 +36,9 @@ def wait_for_responses(logger, timeout=1., expected_count=1):
     with logger._cv:
         while True:
             assert t < timeout, "Timeout waiting for write"
+            if expected_count == 0:
+                logger._cv.wait(timeout=d)
+                assert len(responses.calls) == 0, "Got unexpected write"
             if len(responses.calls) < expected_count:
                 logger._cv.wait(timeout=d)
                 t += d
@@ -728,3 +731,27 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
 
         assert len(responses.calls) == 1
         assert responses.calls[0].request.body == '{"custom": "foo"}'
+
+    @responses.activate
+    def test_log_skip(self):
+        def skip_log(x):
+            raise SkipLog
+
+        logger = NetworkLogger(mock_url,
+                headers={'Authorization': 'Bearer glen'},
+                now=mock_now,
+                body=skip_log,
+                debug=True)
+
+        f = Feature(
+                'test_feature',
+                variants=[Variant('foo', 'Foo')],
+                default_arm='foo',
+                )
+
+        v = asyncio.run(f(User("one"), log=logger))
+        v.log()
+
+        wait_for_responses(logger, expected_count=0)
+
+        assert len(responses.calls) == 0

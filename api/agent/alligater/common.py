@@ -190,3 +190,9 @@ class NoAssignment(Exception):
     Throw this in the `sticky` callback to indicate the feature should be
     evaluated because there is no assignment yet.
     """
+    pass
+
+
+class SkipLog(Exception):
+    """Raise this exception to prevent logging."""
+    pass

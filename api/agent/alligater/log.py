@@ -13,7 +13,7 @@ from requests.packages.urllib3.util.retry import Retry
 from datetime import datetime, timezone
 
 import alligater.events as events
-from .common import simple_object, encode_json, get_uuid
+from .common import simple_object, encode_json, get_uuid, SkipLog
 
 
 
@@ -299,6 +299,8 @@ class NetworkLogger(ObjectLogger):
             self._debugw("Log written")
         except HTTPError as e:
             self._debugw("Failed to write log: {}", e)
+        except SkipLog:
+            self._debugw("Skipping writing log (intentionally)")
         except Exception as e:
             self._debugw("Something unexpected happened: {}", e)
 
