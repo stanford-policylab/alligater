@@ -5,14 +5,7 @@ import json
 import uuid
 from datetime import datetime, date
 
-import mmh3
-
 from .rand import getrandbits
-
-
-
-# Maximum value it's possible to represent as a 64-bit double.
-MAX_DOUBLE = float(0xFFFFFFFFFFFFFFFF)
 
 
 
@@ -29,31 +22,6 @@ def get_uuid() -> str:
     return str(uuid.UUID(int=getrandbits(128)))
 
 
-def hash_id(s: str) -> float:
-    """Compute the hash of the given ID as a float.
-
-    This can be used instead of a PRNG to compute get the effect of random
-    assignments without non-determinism from even seeded PRNGs (which would be
-    non-deterministic based on call order; assignments would not necessarily
-    survive server restarts, for example).
-
-    Args:
-        s - string ID representing an arbitrary entity.
-
-    Returns:
-        A float in [0, 1] that will always correspond to this entity.
-    """
-    # Use murmurhash3 to generate the ID. It's faster than cryptographic
-    # hashes like MD5, the implementation is somewhat simpler since it
-    # generates a float directly, and the output is still uniform.
-    #
-    # Only using the first half of the full 128-bit number; this is still
-    # uniformly distributed and should divide faster. Technique taken from
-    # this blog post:
-    # https://www.rolando.cl/blog/2018/12/how_uniform_is_md5.html
-    return mmh3.hash64(s, signed=False)[0] / MAX_DOUBLE
-
-
 def is_non_string_iterable(c: Any) -> bool:
     """Check if this is a collection (but not a string).
 
@@ -61,31 +29,6 @@ def is_non_string_iterable(c: Any) -> bool:
         c - anything
     """
     return isinstance(c, collections.abc.Iterable) and not isinstance(c, str)
-
-
-def get_entity_field(entity: Any, field_name: str) -> Any:
-    """Quietly get a field from an entity.
-
-    Entity can either use dot property access or brackets as a dict.
-
-    Args:
-        entity - Entity to evaluate
-        field_name - Name of field to get
-
-    Returns:
-        Value of field if found, otherwise None
-    """
-    result = None
-    try:
-        result = getattr(entity, field_name)
-    except AttributeError:
-        try:
-            result = entity[field_name]
-        except Exception:
-            pass
-    except Exception:
-        pass
-    return result
 
 
 def simple_object(value: Any, with_type=False):

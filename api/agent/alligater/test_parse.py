@@ -1,13 +1,13 @@
 import unittest
 from datetime import datetime
 
+from crocodsl.field import _Field
+from crocodsl.func import Hash
 from .feature import Feature
 from .variant import Variant
 from .arm import Arm
 from .rollout import Rollout
 from .population import Population
-from .field import _Field
-from .func import Hash
 import alligater.parse as parse
 
 

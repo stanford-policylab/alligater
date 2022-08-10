@@ -1,4 +1,4 @@
-# Generated from Gram.g4 by ANTLR 4.9.2
+# Generated from Gram.g4 by ANTLR 4.10.1
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .GramParser import GramParser
@@ -122,6 +122,24 @@ class GramListener(ParseTreeListener):
 
     # Exit a parse tree produced by GramParser#args.
     def exitArgs(self, ctx:GramParser.ArgsContext):
+        pass
+
+
+    # Enter a parse tree produced by GramParser#nested_attr.
+    def enterNested_attr(self, ctx:GramParser.Nested_attrContext):
+        pass
+
+    # Exit a parse tree produced by GramParser#nested_attr.
+    def exitNested_attr(self, ctx:GramParser.Nested_attrContext):
+        pass
+
+
+    # Enter a parse tree produced by GramParser#attr.
+    def enterAttr(self, ctx:GramParser.AttrContext):
+        pass
+
+    # Exit a parse tree produced by GramParser#attr.
+    def exitAttr(self, ctx:GramParser.AttrContext):
         pass
 
 

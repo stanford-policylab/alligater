@@ -2,6 +2,8 @@ import unittest
 from datetime import datetime
 from dataclasses import dataclass
 
+from crocodsl.field import _Field
+from crocodsl.func import Hash
 from .value import CallType
 from .common import NoAssignment
 from .feature import Feature
@@ -9,8 +11,6 @@ from .rollout import Rollout
 from .variant import Variant
 from .population import Population
 from .arm import Arm
-from .field import _Field
-from .func import Hash
 
 
 

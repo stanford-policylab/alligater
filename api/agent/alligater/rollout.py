@@ -1,11 +1,12 @@
 from typing import cast, Optional, Sequence, Union, Any
 
-from .common import ValidationError, get_entity_field
+from crocodsl.common import get_entity_field
+from .common import ValidationError
 from .population import Population, PopulationSelector
 from .arm import Arm
-import alligater.field as field
-import alligater.func as func
 import alligater.events as events
+import crocodsl.field as field
+import crocodsl.func as func
 
 
 
@@ -231,7 +232,9 @@ class Rollout:
             events.LeaveRollout(log, member=False, call_id=call_id)
             return None
 
-        x = self.randomize(entity, log=log, call_id=call_id)
+        def trace(name, args, result):
+            events.EvalFunc(log, f=name, args=args, result=result, call_id=call_id)
+        x = self.randomize(entity, log=trace)
 
         events.Randomize(log, entity=entity, function=self.randomize, result=x, call_id=call_id)
 

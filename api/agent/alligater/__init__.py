@@ -31,8 +31,6 @@ from .log import (
         NetworkLogger,
         DeferrableLogger,
         )
-import alligater.func as func
-import alligater.field as field
 
 
 
@@ -260,8 +258,6 @@ __all__ = [
         'Rollout',
         'Population',
         'ValidationError',
-        'func',
-        'field',
         'events',
         'seed',
         'log',

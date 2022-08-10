@@ -2,7 +2,7 @@ from antlr4 import *
 from .gram.GramLexer import GramLexer
 from .gram.GramParser import GramParser
 from .gram.GramListener import GramListener
-import alligater.func as func
+import crocodsl.func as func
 from .field import _Field
 
 
@@ -139,7 +139,8 @@ class ExprCompiler(GramListener):
         self._leaveNode(ctx)
 
     def enterAttribute(self, ctx):
-        self._enterNode(ctx, _Field, [ctx.NAME().getText()])
+        self._enterNode(ctx, _Field, [attr.NAME().getText()
+            for attr in ctx.nested_attr().attr()])
 
     def exitAttribute(self, ctx):
         self._leaveNode(ctx)
@@ -190,9 +191,9 @@ class ExprCompiler(GramListener):
                 raise RuntimeError("Unexpected top-level function args")
             elif not isinstance(value, func._Expression):
                 # If the result was a literal value, wrap it.
-                self.root = func.Literal(value)
-            else:
-                self.root = value
+                value = func.Literal(value)
+            self.root = value
+
 
 
 def _compile(s, debug=False):
@@ -216,7 +217,7 @@ def _compile(s, debug=False):
     return compiler
     
 
-def parse(s):
+def parse(s, debug=False):
     """Parse a given symbolic expression into an _Expression.
 
     Examples:
@@ -241,4 +242,4 @@ def parse(s):
     Returns:
         _Expression object representing the parsed string.
     """
-    return _compile(s).root
+    return _compile(s, debug=debug).root

@@ -1,16 +1,16 @@
 grammar Gram;
 
 expr
-    : value                                                      #literal
-    | NOT? '(' inner=expr ')'                                    #parens
-    | left=expr op=(EQ | NE | LT | LE | GT | GE | IN) right=expr #compare
-    | left=expr op=(AND | OR) left=expr                          #logical
+    : value                                                                      #literal
+    | NOT? '(' inner=expr ')'                                                    #parens
+    | left=expr op=(EQ | NE | LT | LE | GT | GE | IN | HAS | MATCHES) right=expr #compare
+    | left=expr op=(AND | OR) left=expr                                          #logical
     ;
 
 value
     : '[' args ']'      #array
     | NAME '(' args ')' #function
-    | '$' NAME          #attribute
+    | nested_attr       #attribute
     | BOOL              #boolean
     | STRING            #string
     | INT               #int
@@ -20,6 +20,14 @@ value
 
 args
     : ( expr ( ',' expr )* )?
+    ;
+
+nested_attr
+    : attr ( '.' attr )*
+    ;
+
+attr
+    : '$' NAME
     ;
 
 // Operators
@@ -35,8 +43,11 @@ LE: 'Le';
 GT: 'Gt';
 GE: 'Ge';
 IN: 'In';
+HAS: 'Has';
+MATCHES: 'Matches';
 
 // Types
+
 BOOL
     : 'True'
     | 'False'

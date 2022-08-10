@@ -1,8 +1,8 @@
 import unittest
 from dataclasses import dataclass
 
-import alligater.func as func
-import alligater.field as field
+import crocodsl.func as func
+import crocodsl.field as field
 
 
 

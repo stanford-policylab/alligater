@@ -1,7 +1,7 @@
 from collections.abc import Iterable, Sequence
+import re
 
 from .common import hash_id
-import alligater.events as events
 
 
 
@@ -64,13 +64,16 @@ class _Expression(metaclass=_MetaExpression):
 
     def has(self, other):
         # Note __contains__ coerces to bool so we can't use it here.
-        return In(other, self)
+        return Has(self, other)
+
+    def matches(self, other):
+        return Matches(self, other)
 
     def validate(self):
         """Validation for an expression can be implemented in a subclass."""
         pass
 
-    def __call__(self, *args, log=None, call_id=None):
+    def __call__(self, *args, log=None, context=None):
         """This is the actual behavior of the operator.
 
         This must be implemented in a subclass."""
@@ -91,22 +94,20 @@ class _Expression(metaclass=_MetaExpression):
 
         return str(self) == str(other)
 
-    def _trace(self, call_id, log, args, result):
+    def _trace(self, log, args, result):
         """Emit a EvalFunc trace event. If there is no logger passed, this is
         a no-op.
 
         Args:
-            call_id - ID of the exposure invocation
             log - Log function (can be None)
             args - List of (evaluated) arguments used for evaluating this
             expression.
             result - Evaluation result
         """
-        events.EvalFunc(log,
-                f=self.__class__.__name__,
-                args=args,
-                result=result,
-                call_id=call_id)
+        if not log:
+            return
+        name = self.__class__.__name__
+        log(name, args, result)
 
     def to_json(self):
         return str(self)
@@ -124,8 +125,8 @@ class _ComposedExpression(_Expression):
             self.inners = (f,)
 
     def __call__(self, *args, **kwargs):
-        # kwargs are contextual things like `log` and `call_id` that should be
-        # shared across all invocations.
+        # kwargs are contextual things like `log` that should be shared across
+        # all invocations.
         inner_args = [f(*args, **kwargs) for f in self.inners]
         return self.outer(*inner_args, **kwargs)
 
@@ -145,11 +146,11 @@ class _UnaryExpression(_Expression):
     def __init__(self, arg):
         self.arg = arg
 
-    def evaluate(self, *args, log=None, call_id=None):
+    def evaluate(self, *args, log=None, context=None):
         arg = self.arg
 
         if callable(arg):
-            arg = arg(*args, log=log, call_id=call_id)
+            arg = arg(*args, log=log, context=context)
 
         return arg
 
@@ -165,15 +166,15 @@ class _BinaryExpression(_Expression):
         self.left = left
         self.right = right
 
-    def evaluate(self, *args, log=None, call_id=None):
+    def evaluate(self, *args, log=None, context=None):
         left = self.left
         right = self.right
 
         if callable(left):
-            left = left(*args, log=log, call_id=call_id)
+            left = left(*args, log=log, context=context)
 
         if callable(right):
-            right = right(*args, log=log, call_id=call_id)
+            right = right(*args, log=log, context=context)
 
         return left, right
 
@@ -208,8 +209,8 @@ class _NAryExpression(_Expression):
     def __init__(self, *args):
         self.args = args
 
-    def evaluate(self, *fargs, log=None, call_id=None):
-        return [a(*fargs, log=log, call_id=call_id) if callable(a) else a for a in self.args]
+    def evaluate(self, *fargs, log=None, context=None):
+        return [a(*fargs, log=log, context=context) if callable(a) else a for a in self.args]
 
     def __repr__(self):
         op = repr(self.__class__)
@@ -226,10 +227,10 @@ class _NAryExpression(_Expression):
 class Literal(_UnaryExpression):
     """A literal value."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        arg = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        arg = self.evaluate(*args, log=log, context=context)
 
-        self._trace(call_id, log, [arg], arg)
+        self._trace(log, [arg], arg)
 
         return arg
 
@@ -240,11 +241,11 @@ class Literal(_UnaryExpression):
 class Or(_InfixExpression):
     """Boolean 'or' operator."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        left, right = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        left, right = self.evaluate(*args, log=log, context=context)
         result = left or right
 
-        self._trace(call_id, log, [left, right], result)
+        self._trace(log, [left, right], result)
 
         return result
 
@@ -252,11 +253,11 @@ class Or(_InfixExpression):
 class And(_InfixExpression):
     """Boolean 'and' operator."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        left, right = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        left, right = self.evaluate(*args, log=log, context=context)
         result = left and right
 
-        self._trace(call_id, log, [left, right], result)
+        self._trace(log, [left, right], result)
 
         return result
 
@@ -264,11 +265,11 @@ class And(_InfixExpression):
 class Not(_UnaryExpression):
     """Negate a value."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        arg = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        arg = self.evaluate(*args, log=log, context=context)
         result = not arg
 
-        self._trace(call_id, log, [arg], result)
+        self._trace(log, [arg], result)
 
         return result
 
@@ -276,11 +277,11 @@ class Not(_UnaryExpression):
 class Eq(_InfixExpression):
     """Equals operator."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        left, right = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        left, right = self.evaluate(*args, log=log, context=context)
         result = left == right
 
-        self._trace(call_id, log, [left, right], result)
+        self._trace(log, [left, right], result)
 
         return result
 
@@ -292,11 +293,11 @@ Ne = Not[Eq] # type: ignore
 class Lt(_InfixExpression):
     """Less than operator."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        left, right = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        left, right = self.evaluate(*args, log=log, context=context)
         result = left < right
 
-        self._trace(call_id, log, [left, right], result)
+        self._trace(log, [left, right], result)
 
         return result
 
@@ -304,11 +305,11 @@ class Lt(_InfixExpression):
 class Le(_InfixExpression):
     """Less than or equal to operator."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        left, right = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        left, right = self.evaluate(*args, log=log, context=context)
         result = left <= right
 
-        self._trace(call_id, log, [left, right], result)
+        self._trace(log, [left, right], result)
 
         return result
 
@@ -328,8 +329,12 @@ class In(_InfixExpression):
     side are in the right.
     """
 
-    def __call__(self, *args, log=None, call_id=None):
-        left, right = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        left, right = self.evaluate(*args, log=log, context=context)
+
+        # Treat `None` as an empty list
+        if right is None:
+            right = []
 
         result = False
         if isinstance(left, Sequence) and not isinstance(left, str):
@@ -337,19 +342,24 @@ class In(_InfixExpression):
         else:
             result = left in right
 
-        self._trace(call_id, log, [left, right], result)
+        self._trace(log, [left, right], result)
 
         return result
+
+
+def Has(left, right):
+    """Reversed notation of `In`."""
+    return In(right, left)
 
 
 class Concat(_NAryExpression):
     """Concatenation operator."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        args = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        args = self.evaluate(*args, log=log, context=context)
         val = "".join([str(a) for a in args])
 
-        self._trace(call_id, log, args, val)
+        self._trace(log, args, val)
 
         return val
 
@@ -357,11 +367,11 @@ class Concat(_NAryExpression):
 class Hash(_UnaryExpression):
     """Compute the assignment hash of a value."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        arg = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        arg = self.evaluate(*args, log=log, context=context)
         val = hash_id(str(arg))
 
-        self._trace(call_id, log, [arg], val)
+        self._trace(log, [arg], val)
 
         return val
 
@@ -369,10 +379,32 @@ class Hash(_UnaryExpression):
 class Len(_UnaryExpression):
     """Get length of an iterable."""
 
-    def __call__(self, *args, log=None, call_id=None):
-        arg = self.evaluate(*args, log=log, call_id=call_id)
+    def __call__(self, *args, log=None, context=None):
+        arg = self.evaluate(*args, log=log, context=context)
         val = len(arg)
 
-        self._trace(call_id, log, [arg], val)
+        self._trace(log, [arg], val)
 
         return val
+
+
+class Matches(_InfixExpression):
+    """Perform a regular expression match.
+
+    Example:
+        $my_prop Matches '.*'
+    """
+
+    def __call__(self, *args, log=None, context=None):
+        left, right = self.evaluate(*args, log=log, context=context)
+
+        if left is None:
+            left = ""
+        if right is None:
+            right = ""
+
+        result = re.search(right, left) is not None
+
+        self._trace(log, [left, right], result)
+
+        return result

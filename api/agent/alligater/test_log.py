@@ -204,7 +204,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                     }},
                 {'type': 'EvalFunc', 'data': {
                     'f': '_Field',
-                    'args': [{'id': 'two'}, 'id'],
+                    'args': [{'id': 'two'}, '$id'],
                     'result': 'two',
                     }},
                 {'type': 'EvalFunc', 'data': {
@@ -374,7 +374,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                     }},
                 {'type': 'EvalFunc', 'data': {
                     'f': '_Field',
-                    'args': [{'id': 'two'}, 'id'],
+                    'args': [{'id': 'two'}, '$id'],
                     'result': 'two',
                     }},
                 {'type': 'EvalFunc', 'data': {
@@ -485,7 +485,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                     }},
                 {'type': 'EvalFunc', 'data': {
                     'f': '_Field',
-                    'args': [{'id': 'two'}, 'id'],
+                    'args': [{'id': 'two'}, '$id'],
                     'result': 'two',
                     }},
                 {'type': 'EvalFunc', 'data': {
@@ -598,7 +598,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                     }},
                 {'type': 'EvalFunc', 'data': {
                     'f': '_Field',
-                    'args': [{'id': 'two'}, 'id'],
+                    'args': [{'id': 'two'}, '$id'],
                     'result': 'two',
                     }},
                 {'type': 'EvalFunc', 'data': {

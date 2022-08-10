@@ -66,4 +66,4 @@ Read the class documentation for more info!
 The current implementation is essentially feature complete. This is a list of
 known limitations:
 
-- [ ] Expression DSL does not support Map types
+- [ ] Expression DSL does not support Map types (see `crocodsl`).

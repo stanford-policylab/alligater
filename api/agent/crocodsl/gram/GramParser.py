@@ -1,4 +1,4 @@
-# Generated from Gram.g4 by ANTLR 4.9.2
+# Generated from Gram.g4 by ANTLR 4.10.1
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -8,33 +8,33 @@ if sys.version_info[1] > 5:
 else:
 	from typing.io import TextIO
 
-
 def serializedATN():
-    with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\32")
-        buf.write(";\4\2\t\2\4\3\t\3\4\4\t\4\3\2\3\2\3\2\5\2\f\n\2\3\2\3")
-        buf.write("\2\3\2\3\2\5\2\22\n\2\3\2\3\2\3\2\3\2\3\2\3\2\7\2\32\n")
-        buf.write("\2\f\2\16\2\35\13\2\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3")
-        buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\5\3/\n\3\3\4\3\4\3\4\7")
-        buf.write("\4\64\n\4\f\4\16\4\67\13\4\5\49\n\4\3\4\2\3\2\5\2\4\6")
-        buf.write("\2\4\3\2\f\22\3\2\n\13\2D\2\21\3\2\2\2\4.\3\2\2\2\68\3")
-        buf.write("\2\2\2\b\t\b\2\1\2\t\22\5\4\3\2\n\f\7\t\2\2\13\n\3\2\2")
-        buf.write("\2\13\f\3\2\2\2\f\r\3\2\2\2\r\16\7\3\2\2\16\17\5\2\2\2")
-        buf.write("\17\20\7\4\2\2\20\22\3\2\2\2\21\b\3\2\2\2\21\13\3\2\2")
-        buf.write("\2\22\33\3\2\2\2\23\24\f\4\2\2\24\25\t\2\2\2\25\32\5\2")
-        buf.write("\2\5\26\27\f\3\2\2\27\30\t\3\2\2\30\32\5\2\2\4\31\23\3")
-        buf.write("\2\2\2\31\26\3\2\2\2\32\35\3\2\2\2\33\31\3\2\2\2\33\34")
-        buf.write("\3\2\2\2\34\3\3\2\2\2\35\33\3\2\2\2\36\37\7\5\2\2\37 ")
-        buf.write("\5\6\4\2 !\7\6\2\2!/\3\2\2\2\"#\7\25\2\2#$\7\3\2\2$%\5")
-        buf.write("\6\4\2%&\7\4\2\2&/\3\2\2\2\'(\7\7\2\2(/\7\25\2\2)/\7\23")
-        buf.write("\2\2*/\7\26\2\2+/\7\27\2\2,/\7\32\2\2-/\7\24\2\2.\36\3")
-        buf.write("\2\2\2.\"\3\2\2\2.\'\3\2\2\2.)\3\2\2\2.*\3\2\2\2.+\3\2")
-        buf.write("\2\2.,\3\2\2\2.-\3\2\2\2/\5\3\2\2\2\60\65\5\2\2\2\61\62")
-        buf.write("\7\b\2\2\62\64\5\2\2\2\63\61\3\2\2\2\64\67\3\2\2\2\65")
-        buf.write("\63\3\2\2\2\65\66\3\2\2\2\669\3\2\2\2\67\65\3\2\2\28\60")
-        buf.write("\3\2\2\289\3\2\2\29\7\3\2\2\2\t\13\21\31\33.\658")
-        return buf.getvalue()
-
+    return [
+        4,1,27,71,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,1,0,1,0,1,0,3,
+        0,14,8,0,1,0,1,0,1,0,1,0,3,0,20,8,0,1,0,1,0,1,0,1,0,1,0,1,0,5,0,
+        28,8,0,10,0,12,0,31,9,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,3,1,48,8,1,1,2,1,2,1,2,5,2,53,8,2,10,2,12,2,
+        56,9,2,3,2,58,8,2,1,3,1,3,1,3,5,3,63,8,3,10,3,12,3,66,9,3,1,4,1,
+        4,1,4,1,4,0,1,0,5,0,2,4,6,8,0,2,1,0,11,19,1,0,9,10,79,0,19,1,0,0,
+        0,2,47,1,0,0,0,4,57,1,0,0,0,6,59,1,0,0,0,8,67,1,0,0,0,10,11,6,0,
+        -1,0,11,20,3,2,1,0,12,14,5,8,0,0,13,12,1,0,0,0,13,14,1,0,0,0,14,
+        15,1,0,0,0,15,16,5,1,0,0,16,17,3,0,0,0,17,18,5,2,0,0,18,20,1,0,0,
+        0,19,10,1,0,0,0,19,13,1,0,0,0,20,29,1,0,0,0,21,22,10,2,0,0,22,23,
+        7,0,0,0,23,28,3,0,0,3,24,25,10,1,0,0,25,26,7,1,0,0,26,28,3,0,0,2,
+        27,21,1,0,0,0,27,24,1,0,0,0,28,31,1,0,0,0,29,27,1,0,0,0,29,30,1,
+        0,0,0,30,1,1,0,0,0,31,29,1,0,0,0,32,33,5,3,0,0,33,34,3,4,2,0,34,
+        35,5,4,0,0,35,48,1,0,0,0,36,37,5,22,0,0,37,38,5,1,0,0,38,39,3,4,
+        2,0,39,40,5,2,0,0,40,48,1,0,0,0,41,48,3,6,3,0,42,48,5,20,0,0,43,
+        48,5,23,0,0,44,48,5,24,0,0,45,48,5,27,0,0,46,48,5,21,0,0,47,32,1,
+        0,0,0,47,36,1,0,0,0,47,41,1,0,0,0,47,42,1,0,0,0,47,43,1,0,0,0,47,
+        44,1,0,0,0,47,45,1,0,0,0,47,46,1,0,0,0,48,3,1,0,0,0,49,54,3,0,0,
+        0,50,51,5,5,0,0,51,53,3,0,0,0,52,50,1,0,0,0,53,56,1,0,0,0,54,52,
+        1,0,0,0,54,55,1,0,0,0,55,58,1,0,0,0,56,54,1,0,0,0,57,49,1,0,0,0,
+        57,58,1,0,0,0,58,5,1,0,0,0,59,64,3,8,4,0,60,61,5,6,0,0,61,63,3,8,
+        4,0,62,60,1,0,0,0,63,66,1,0,0,0,64,62,1,0,0,0,64,65,1,0,0,0,65,7,
+        1,0,0,0,66,64,1,0,0,0,67,68,5,7,0,0,68,69,5,22,0,0,69,9,1,0,0,0,
+        8,13,19,27,29,47,54,57,64
+    ]
 
 class GramParser ( Parser ):
 
@@ -46,21 +46,24 @@ class GramParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "'('", "')'", "'['", "']'", "'$'", "','", 
-                     "'Not'", "'And'", "'Or'", "'Eq'", "'Ne'", "'Lt'", "'Le'", 
-                     "'Gt'", "'Ge'", "'In'", "<INVALID>", "'None'" ]
+    literalNames = [ "<INVALID>", "'('", "')'", "'['", "']'", "','", "'.'", 
+                     "'$'", "'Not'", "'And'", "'Or'", "'Eq'", "'Ne'", "'Lt'", 
+                     "'Le'", "'Gt'", "'Ge'", "'In'", "'Has'", "'Matches'", 
+                     "<INVALID>", "'None'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "<INVALID>", "<INVALID>", "<INVALID>", "NOT", "AND", 
-                      "OR", "EQ", "NE", "LT", "LE", "GT", "GE", "IN", "BOOL", 
-                      "NULL", "NAME", "STRING", "INT", "POS_INT", "SP", 
-                      "FLOAT" ]
+                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                      "NOT", "AND", "OR", "EQ", "NE", "LT", "LE", "GT", 
+                      "GE", "IN", "HAS", "MATCHES", "BOOL", "NULL", "NAME", 
+                      "STRING", "INT", "POS_INT", "SP", "FLOAT" ]
 
     RULE_expr = 0
     RULE_value = 1
     RULE_args = 2
+    RULE_nested_attr = 3
+    RULE_attr = 4
 
-    ruleNames =  [ "expr", "value", "args" ]
+    ruleNames =  [ "expr", "value", "args", "nested_attr", "attr" ]
 
     EOF = Token.EOF
     T__0=1
@@ -69,28 +72,31 @@ class GramParser ( Parser ):
     T__3=4
     T__4=5
     T__5=6
-    NOT=7
-    AND=8
-    OR=9
-    EQ=10
-    NE=11
-    LT=12
-    LE=13
-    GT=14
-    GE=15
-    IN=16
-    BOOL=17
-    NULL=18
-    NAME=19
-    STRING=20
-    INT=21
-    POS_INT=22
-    SP=23
-    FLOAT=24
+    T__6=7
+    NOT=8
+    AND=9
+    OR=10
+    EQ=11
+    NE=12
+    LT=13
+    LE=14
+    GT=15
+    GE=16
+    IN=17
+    HAS=18
+    MATCHES=19
+    BOOL=20
+    NULL=21
+    NAME=22
+    STRING=23
+    INT=24
+    POS_INT=25
+    SP=26
+    FLOAT=27
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.9.2")
+        self.checkVersion("4.10.1")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -164,6 +170,10 @@ class GramParser ( Parser ):
             return self.getToken(GramParser.GE, 0)
         def IN(self):
             return self.getToken(GramParser.IN, 0)
+        def HAS(self):
+            return self.getToken(GramParser.HAS, 0)
+        def MATCHES(self):
+            return self.getToken(GramParser.MATCHES, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterCompare" ):
@@ -232,41 +242,41 @@ class GramParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 15
+            self.state = 19
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [GramParser.T__2, GramParser.T__4, GramParser.BOOL, GramParser.NULL, GramParser.NAME, GramParser.STRING, GramParser.INT, GramParser.FLOAT]:
+            if token in [GramParser.T__2, GramParser.T__6, GramParser.BOOL, GramParser.NULL, GramParser.NAME, GramParser.STRING, GramParser.INT, GramParser.FLOAT]:
                 localctx = GramParser.LiteralContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
 
-                self.state = 7
+                self.state = 11
                 self.value()
                 pass
             elif token in [GramParser.T__0, GramParser.NOT]:
                 localctx = GramParser.ParensContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 9
+                self.state = 13
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if _la==GramParser.NOT:
-                    self.state = 8
+                    self.state = 12
                     self.match(GramParser.NOT)
 
 
-                self.state = 11
+                self.state = 15
                 self.match(GramParser.T__0)
-                self.state = 12
+                self.state = 16
                 localctx.inner = self.expr(0)
-                self.state = 13
+                self.state = 17
                 self.match(GramParser.T__1)
                 pass
             else:
                 raise NoViableAltException(self)
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 25
+            self.state = 29
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,3,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -274,26 +284,26 @@ class GramParser ( Parser ):
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 23
+                    self.state = 27
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,2,self._ctx)
                     if la_ == 1:
                         localctx = GramParser.CompareContext(self, GramParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 17
+                        self.state = 21
                         if not self.precpred(self._ctx, 2):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 2)")
-                        self.state = 18
+                        self.state = 22
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << GramParser.EQ) | (1 << GramParser.NE) | (1 << GramParser.LT) | (1 << GramParser.LE) | (1 << GramParser.GT) | (1 << GramParser.GE) | (1 << GramParser.IN))) != 0)):
+                        if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << GramParser.EQ) | (1 << GramParser.NE) | (1 << GramParser.LT) | (1 << GramParser.LE) | (1 << GramParser.GT) | (1 << GramParser.GE) | (1 << GramParser.IN) | (1 << GramParser.HAS) | (1 << GramParser.MATCHES))) != 0)):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 19
+                        self.state = 23
                         localctx.right = self.expr(3)
                         pass
 
@@ -301,11 +311,11 @@ class GramParser ( Parser ):
                         localctx = GramParser.LogicalContext(self, GramParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 20
+                        self.state = 24
                         if not self.precpred(self._ctx, 1):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 1)")
-                        self.state = 21
+                        self.state = 25
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
                         if not(_la==GramParser.AND or _la==GramParser.OR):
@@ -313,12 +323,12 @@ class GramParser ( Parser ):
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 22
+                        self.state = 26
                         localctx.left = self.expr(2)
                         pass
 
              
-                self.state = 27
+                self.state = 31
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,3,self._ctx)
 
@@ -448,8 +458,9 @@ class GramParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def NAME(self):
-            return self.getToken(GramParser.NAME, 0)
+        def nested_attr(self):
+            return self.getTypedRuleContext(GramParser.Nested_attrContext,0)
+
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterAttribute" ):
@@ -502,67 +513,65 @@ class GramParser ( Parser ):
         localctx = GramParser.ValueContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_value)
         try:
-            self.state = 44
+            self.state = 47
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [GramParser.T__2]:
                 localctx = GramParser.ArrayContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 28
+                self.state = 32
                 self.match(GramParser.T__2)
-                self.state = 29
+                self.state = 33
                 self.args()
-                self.state = 30
+                self.state = 34
                 self.match(GramParser.T__3)
                 pass
             elif token in [GramParser.NAME]:
                 localctx = GramParser.FunctionContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 32
+                self.state = 36
                 self.match(GramParser.NAME)
-                self.state = 33
+                self.state = 37
                 self.match(GramParser.T__0)
-                self.state = 34
+                self.state = 38
                 self.args()
-                self.state = 35
+                self.state = 39
                 self.match(GramParser.T__1)
                 pass
-            elif token in [GramParser.T__4]:
+            elif token in [GramParser.T__6]:
                 localctx = GramParser.AttributeContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 37
-                self.match(GramParser.T__4)
-                self.state = 38
-                self.match(GramParser.NAME)
+                self.state = 41
+                self.nested_attr()
                 pass
             elif token in [GramParser.BOOL]:
                 localctx = GramParser.BooleanContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
-                self.state = 39
+                self.state = 42
                 self.match(GramParser.BOOL)
                 pass
             elif token in [GramParser.STRING]:
                 localctx = GramParser.StringContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
-                self.state = 40
+                self.state = 43
                 self.match(GramParser.STRING)
                 pass
             elif token in [GramParser.INT]:
                 localctx = GramParser.IntContext(self, localctx)
                 self.enterOuterAlt(localctx, 6)
-                self.state = 41
+                self.state = 44
                 self.match(GramParser.INT)
                 pass
             elif token in [GramParser.FLOAT]:
                 localctx = GramParser.FloatContext(self, localctx)
                 self.enterOuterAlt(localctx, 7)
-                self.state = 42
+                self.state = 45
                 self.match(GramParser.FLOAT)
                 pass
             elif token in [GramParser.NULL]:
                 localctx = GramParser.NullContext(self, localctx)
                 self.enterOuterAlt(localctx, 8)
-                self.state = 43
+                self.state = 46
                 self.match(GramParser.NULL)
                 pass
             else:
@@ -612,26 +621,127 @@ class GramParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 54
+            self.state = 57
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << GramParser.T__0) | (1 << GramParser.T__2) | (1 << GramParser.T__4) | (1 << GramParser.NOT) | (1 << GramParser.BOOL) | (1 << GramParser.NULL) | (1 << GramParser.NAME) | (1 << GramParser.STRING) | (1 << GramParser.INT) | (1 << GramParser.FLOAT))) != 0):
-                self.state = 46
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << GramParser.T__0) | (1 << GramParser.T__2) | (1 << GramParser.T__6) | (1 << GramParser.NOT) | (1 << GramParser.BOOL) | (1 << GramParser.NULL) | (1 << GramParser.NAME) | (1 << GramParser.STRING) | (1 << GramParser.INT) | (1 << GramParser.FLOAT))) != 0):
+                self.state = 49
                 self.expr(0)
-                self.state = 51
+                self.state = 54
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==GramParser.T__5:
-                    self.state = 47
-                    self.match(GramParser.T__5)
-                    self.state = 48
+                while _la==GramParser.T__4:
+                    self.state = 50
+                    self.match(GramParser.T__4)
+                    self.state = 51
                     self.expr(0)
-                    self.state = 53
+                    self.state = 56
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
 
 
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class Nested_attrContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def attr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(GramParser.AttrContext)
+            else:
+                return self.getTypedRuleContext(GramParser.AttrContext,i)
+
+
+        def getRuleIndex(self):
+            return GramParser.RULE_nested_attr
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterNested_attr" ):
+                listener.enterNested_attr(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitNested_attr" ):
+                listener.exitNested_attr(self)
+
+
+
+
+    def nested_attr(self):
+
+        localctx = GramParser.Nested_attrContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 6, self.RULE_nested_attr)
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 59
+            self.attr()
+            self.state = 64
+            self._errHandler.sync(self)
+            _alt = self._interp.adaptivePredict(self._input,7,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
+                    self.state = 60
+                    self.match(GramParser.T__5)
+                    self.state = 61
+                    self.attr() 
+                self.state = 66
+                self._errHandler.sync(self)
+                _alt = self._interp.adaptivePredict(self._input,7,self._ctx)
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class AttrContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def NAME(self):
+            return self.getToken(GramParser.NAME, 0)
+
+        def getRuleIndex(self):
+            return GramParser.RULE_attr
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterAttr" ):
+                listener.enterAttr(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitAttr" ):
+                listener.exitAttr(self)
+
+
+
+
+    def attr(self):
+
+        localctx = GramParser.AttrContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 8, self.RULE_attr)
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 67
+            self.match(GramParser.T__6)
+            self.state = 68
+            self.match(GramParser.NAME)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)

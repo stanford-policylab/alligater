@@ -1,6 +1,6 @@
 import unittest
 
-import alligater.func as func
+import crocodsl.func as func
 
 
 
@@ -21,6 +21,7 @@ class TestFunc(unittest.TestCase):
         assert repr(func.Concat) == 'Concat'
         assert repr(func.Hash) == 'Hash'
         assert repr(func.Len) == 'Len'
+        assert repr(func.Matches) == 'Matches'
 
     def test_expr_repr(self):
         """Test the representations of expressions."""
@@ -45,6 +46,8 @@ class TestFunc(unittest.TestCase):
         assert repr(func.In("a", ["a", "b", "c"])) == "'a' In ['a', 'b', 'c']"
         assert repr(func.Concat("a", "b", "c")) == "Concat('a', 'b', 'c')"
         assert repr(func.Hash("foo")) == "Hash('foo')"
+        assert repr(func.Has([1, 2, 3], 1) == "1 In [1, 2, 3]")
+        assert repr(func.Matches("Foo", r'.*') == "'Foo' Matches '.*'")
 
     def test_eq(self):
         """Test equality."""
@@ -133,6 +136,15 @@ class TestFunc(unittest.TestCase):
         assert func.In("b", ["a", "b", "c"])() is True
         assert func.In("c", ["a", "b", "c"])() is True
         assert func.In("x", ["a", "b", "c"])() is False
+        assert func.In("x", None)() is False
+    
+    def test_has(self):
+        """Test reverse containment."""
+        assert func.Has(["a", "b", "c"], "a")() is True
+        assert func.Has(["a", "b", "c"], "b")() is True
+        assert func.Has(["a", "b", "c"], "c")() is True
+        assert func.Has(["a", "b", "c"], "x")() is False
+        assert func.Has(None, "x")() is False
 
     def test_concat(self):
         """Test concatenation."""
@@ -148,6 +160,13 @@ class TestFunc(unittest.TestCase):
         assert func.Len("abc") == 3
         assert func.Len(("a", "b",)) == 2
         assert func.Len({"a": 1, "b": 2, "c": 3}) == 3
+
+    def test_matches(self):
+        """Test regex matching."""
+        assert func.Matches("foo", r'.*')() is True
+        assert func.Matches("foo", r'^f')() is True
+        assert func.Matches("bar", r'^f')() is False
+        assert func.Matches("a.b.c", r'\.b\.')() is True
 
     def test_composition(self):
         """Make sure functions can be composed."""

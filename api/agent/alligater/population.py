@@ -2,9 +2,9 @@ import abc
 from typing import Any, Optional
 
 from .common import ValidationError
-import alligater.func as func
-import alligater.field as field
 import alligater.events as events
+import crocodsl.func as func
+import crocodsl.field as field
 
 
 
@@ -89,7 +89,9 @@ class ExpressionSelector(PopulationSelector):
         Returns:
             True or False indicating membership in this population.
         """
-        result = self.expression(entity, log=log, call_id=call_id)
+        def trace(name, args, result):
+            events.EvalFunc(log, f=name, args=args, result=result, call_id=call_id)
+        result = self.expression(entity, log=trace)
         events.EvaluatePopulation(log, population=self, entity=entity, member=result, call_id=call_id)
         return result
 

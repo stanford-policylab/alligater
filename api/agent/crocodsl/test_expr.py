@@ -40,6 +40,18 @@ class TestExpr(unittest.TestCase):
         assert parse("$id")({"foo": 123}) == None
         assert parse("[1, 2, $id]")({"id": 3}) == [1, 2, 3]
 
+    def test_nested_field(self):
+        """Test accessing nested fields."""
+        d = {"a": {"b": "c"}}
+        assert parse("$a.$b")(d) == "c"
+
+        class A:
+            def foo(self, *, value):
+                return {"value": value}
+
+        assert parse("$foo.$value")(A(), context={'value': 'hi'}) == 'hi'
+        assert parse("Concat($foo.$value, ', you') Eq 'hi, you'")(A(), context={'value': 'hi'}) is True
+
     def test_parse_compare(self):
         """Parse comparisons."""
         assert parse("1 Eq 1").equivalent(Eq(1, 1))
@@ -74,6 +86,10 @@ class TestExpr(unittest.TestCase):
         # "c" hashes to 0.5555553092364088, but is in the list
         assert parse("Hash($id) Lt 0.5 Or $id In ['a', 'b', 'c']")({"id": "c"}) is True
 
+        assert parse("(Concat($first_name, ' ', $last_name) Matches 'foo') Or ($outcomes Has 'xyz')").equivalent(
+                Concat(_Field("first_name"), ' ', _Field("last_name")).matches('foo').or_(_Field("outcomes").has('xyz'))
+                )
+
     def test_inverse(self):
         """Test that str reps of parses are also parsable."""
         def t(exp, s):
@@ -99,3 +115,7 @@ class TestExpr(unittest.TestCase):
         t(Hash(Concat("prefix", ":", _Field("foo"))), "Hash(Concat('prefix', ':', $foo))")
         t(Eq(_Field("id"), "foo"), "$id Eq 'foo'")
         t(And(_Field("id") == "foo", Hash(_Field("id")) < 0.5), "($id Eq 'foo') And (Hash($id) Lt 0.5)")
+        t(
+                Concat(_Field("first_name"), ' ', _Field("last_name")).matches('foo').or_(_Field("outcomes").has('xyz')),
+                "(Concat($first_name, ' ', $last_name) Matches 'foo') Or ('xyz' In $outcomes)"
+                )

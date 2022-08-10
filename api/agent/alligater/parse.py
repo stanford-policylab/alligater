@@ -7,14 +7,13 @@ try:
 except ImportError:
     from yaml import Loader # type: ignore
 
+from crocodsl import parse as parse_expression
 from .common import InvalidConfigError
 from .population import Population
 from .feature import Feature
 from .rollout import Rollout
 from .arm import Arm
 from .variant import Variant
-from .field import _Field
-from .expr import parse as parse_expression
 from .log import log
 
 
