@@ -24,8 +24,8 @@ class MockDeferredLogger(DeferrableLogger):
     def __call__(self, *args, **kwargs):
         self.mock(*args, **kwargs)
 
-    def write_log(self, call_id):
-        self.mock.write_log(call_id)
+    def write_log(self, call_id, extra=None):
+        self.mock.write_log(call_id, extra=extra)
 
     def drop_log(self, call_id):
         self.mock.drop_log(call_id)
@@ -78,7 +78,7 @@ class TestGater(unittest.IsolatedAsyncioTestCase):
         logger.mock.drop_log.assert_not_called()
         call_id = v2._call_id
         v2.log()
-        logger.mock.write_log.assert_called_with(call_id)
+        logger.mock.write_log.assert_called_with(call_id, extra=None)
         logger.mock.drop_log.assert_not_called()
 
     async def test_drop_deferred_logging(self):

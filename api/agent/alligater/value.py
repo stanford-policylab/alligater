@@ -39,11 +39,10 @@ class Value(Generic[T]):
         self._call_id = call_id
         self._call_type = call_type
         self._log = log
-        self._deferrable = isinstance(log, DeferrableLogger)
 
     def __del__(self):
         """Clean up unsent logs when garbage collecting."""
-        if self._deferrable:
+        if isinstance(self._log, DeferrableLogger):
             self._log.drop_log(self._call_id)
 
     @property
@@ -56,13 +55,16 @@ class Value(Generic[T]):
         """Check the type of call (assignment vs exposure)."""
         return self._call_type
 
-    def log(self):
+    def log(self, extra: Optional[dict] = None):
         """Write a log to the server.
 
         Only needs to be called if the log is deferred.
+
+        Args:
+            extra - Optional additional data to log.
         """
-        if self._deferrable:
-            self._log.write_log(self._call_id)
+        if isinstance(self._log, DeferrableLogger) and self._call_id:
+            self._log.write_log(self._call_id, extra=extra)
             # If the call type wasn't already an exposure, it should be now!
             self._call_type = CallType.EXPOSURE
 

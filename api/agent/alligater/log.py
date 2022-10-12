@@ -1,3 +1,4 @@
+from typing import Optional
 import atexit
 import signal
 import threading
@@ -30,8 +31,13 @@ class DeferrableLogger(events.EventLogger):
     """Traits for a logger that can be deferred."""
 
     @abc.abstractmethod
-    def write_log(self, call_id: str):
-        """Write the log with the given ID."""
+    def write_log(self, call_id: str, extra: Optional[dict]=None):
+        """Write the log with the given ID.
+
+        Args:
+            call_id - The UUID of the log to write
+            extra - Extra data to send with this log
+        """
         ...
 
     @abc.abstractmethod
@@ -130,7 +136,7 @@ class ObjectLogger(DeferrableLogger):
                 # put it in the queue.
                 self._deferred.add(call_id)
 
-    def write_log(self, call_id):
+    def write_log(self, call_id, extra=None):
         """Write a deferred log by its ID."""
         with self._cv:
             if call_id not in self._deferred:
@@ -142,6 +148,11 @@ class ObjectLogger(DeferrableLogger):
             # If this event has been sent before, generate a new ID for it.
             if data['repeat']:
                 data['call_id'] = get_uuid()
+
+            # Add extra data if it's given during this call.
+            if extra:
+                data['extra'] = extra
+
             # Add to queue to publish.
             self._finished.append(data)
             # Mark the cached object as a repeat if it's logged again.
