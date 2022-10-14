@@ -11,6 +11,7 @@ import alligater.events as events
 
 if TYPE_CHECKING:
     from .variant import Variant
+    from .cache import AssignmentCache
 
 
 
@@ -144,13 +145,17 @@ class Feature:
             entity: Any,
             log: Optional[events.EventLogger] = None,
             call_id: Optional[str] = None,
-            sticky: Optional[AssignmentFetcher] = None) -> Value[Any]:
+            sticky: Optional[AssignmentFetcher] = None,
+            assignment_cache: Optional['AssignmentCache'] = None) -> Value[Any]:
         """Apply the gate to the given entity.
 
         Args:
             entity - the entity to gate
             log - logging function
             sticky - optional function to fetch previous assignment
+            assignment_cache - optional local cache of assignments. This is
+            only checked if `sticky` is also passed. It should be used to
+            avoid race conditions.
 
         Internal Args:
             call_id - the ID of the feature invocation that this call is
@@ -172,11 +177,22 @@ class Feature:
 
         if sticky:
             has_assignment = False
+
             try:
-                if asyncio.iscoroutinefunction(sticky):
-                    variant_name, value = await cast(AsyncAssignmentFetcher, sticky)(self, entity)
+                # Look up the assignment in the local cache first if possible.
+                # This avoids race conditions that come from assignment lookups
+                # that happen before they are first written to the server.
+                cached = None
+                if assignment_cache:
+                    cached = assignment_cache.get(self, entity)
+
+                if cached:
+                    variant_name, value = cached
                 else:
-                    variant_name, value = cast(SyncAssignmentFetcher, sticky)(self, entity)
+                    if asyncio.iscoroutinefunction(sticky):
+                        variant_name, value = await cast(AsyncAssignmentFetcher, sticky)(self, entity)
+                    else:
+                        variant_name, value = cast(SyncAssignmentFetcher, sticky)(self, entity)
                 has_assignment = True
             except NoAssignment:
                 pass
@@ -223,6 +239,8 @@ class Feature:
                 if not nested:
                     events.LeaveGate(log, value=value, call_id=call_id)
 
+                if assignment_cache:
+                    assignment_cache.set(self, entity, variant_name, value)
                 return Value(value, call_id, CallType.ASSIGNMENT, log=log)
 
         # This code is probably unreachable since there has to be a default

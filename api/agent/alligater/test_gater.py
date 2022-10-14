@@ -49,6 +49,24 @@ class TestGater(unittest.IsolatedAsyncioTestCase):
         assert await gater.foo({}) == 'Foo'
         assert logger.mock.write_log.call_count == 2
 
+    async def test_local_assignment_cache(self):
+        def _sticky(feature, entity):
+            raise NoAssignment
+
+        foo = Feature('foo',
+                variants=[
+                    Variant('foo', 'Foo'),
+                    Variant('bar', 'Bar')],
+                default_arm='foo')
+
+        gater = Alligater(features=[foo], sticky=_sticky)
+        gater._local_assignments.set(foo, {'id': 'a'}, 'bar', 'Bar')
+        assert await gater.foo({'id': 'a'}) == 'Bar'
+        assert await gater.foo({'id': 'b'}) == 'Foo'
+        assert gater._local_assignments.get(foo, {'id': 'b'}) == ('foo', 'Foo')
+        gater._local_assignments.clear()
+        assert await gater.foo({'id': 'a'}) == 'Foo'
+
     async def test_deferred_exposure_logging(self):
         def _sticky(feature, entity):
             if entity['id'] == 2:

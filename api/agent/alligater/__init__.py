@@ -9,6 +9,7 @@ from .variant import Variant
 from .arm import Arm
 from .rollout import Rollout
 from .population import Population
+from .cache import AssignmentCache
 from .common import (
         ValidationError,
         MissingFeatureError,
@@ -102,6 +103,7 @@ class Alligater:
         self._stopped = True
         # Background thread
         self._thread = None
+        self._local_assignments = AssignmentCache()
 
         # Start reloading. This will load one initial time on the main thread,
         # then (if `reload_interval` and `yaml` options are passed) will reload
@@ -146,7 +148,7 @@ class Alligater:
             Wrapped value of the variant to return.
         """
         logger = self._logger if not silent else None
-        value = await feature(entity, log=logger, sticky=self._sticky)
+        value = await feature(entity, log=logger, sticky=self._sticky, assignment_cache=self._local_assignments)
         # Note that Logger implementations that aren't DeferrableLoggers
         # log immediately and calling `log` is just a no-op.
         if value.call_type == CallType.ASSIGNMENT:
