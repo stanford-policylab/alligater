@@ -1,19 +1,17 @@
-from typing import Any, Optional, TypeVar, Generic
 import math
 from enum import Enum
+from typing import Any, Generic, Optional, TypeVar
 
-from .log import DeferrableLogger
 from .events import EventLogger
-
+from .log import DeferrableLogger
 
 
 class CallType(Enum):
-    ASSIGNMENT = 'assignment'
-    EXPOSURE = 'exposure'
+    ASSIGNMENT = "assignment"
+    EXPOSURE = "exposure"
 
 
-
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Value(Generic[T]):
@@ -30,11 +28,13 @@ class Value(Generic[T]):
     If a log is deferred and never sent, it will be garbage collected.
     """
 
-    def __init__(self,
-            value: T,
-            call_id: Optional[str] = None,
-            call_type: CallType = CallType.ASSIGNMENT,
-            log: Optional[EventLogger] = None):
+    def __init__(
+        self,
+        value: T,
+        call_id: Optional[str] = None,
+        call_type: CallType = CallType.ASSIGNMENT,
+        log: Optional[EventLogger] = None,
+    ):
         self._value = value
         self._call_id = call_id
         self._call_type = call_type
@@ -67,7 +67,6 @@ class Value(Generic[T]):
             self._log.write_log(self._call_id, extra=extra)
             # If the call type wasn't already an exposure, it should be now!
             self._call_type = CallType.EXPOSURE
-
 
     ## PROXY ALL THE DUNDER METHODS TO THE INTERNAL VALUE ##
 

@@ -1,22 +1,20 @@
-from typing import Any, Sequence, Optional
 import abc
+from typing import Any, Optional, Sequence
 
 from .common import ValidationError, simple_object
-
 
 
 class EventLogger(abc.ABC):
     """Base class to define a logger."""
 
     @abc.abstractmethod
-    def __call__(self, event: '_EventInstance'):
+    def __call__(self, event: "_EventInstance"):
         """Log the given event.
 
         Args:
             event - instantiated event
         """
         ...
-
 
 
 class _EventInstance:
@@ -59,19 +57,19 @@ class _EventInstance:
             Dictionary of values
         """
         d: dict[str, Any] = {
-                'type': self.name,
-                'data': dict[str, Any](),
-                }
+            "type": self.name,
+            "data": dict[str, Any](),
+        }
 
         for k, v in self.args.items():
             vd = simple_object(v)
 
-            if type(vd) == dict and 'name' in vd:
-                vd = vd['name']
+            if type(vd) == dict and "name" in vd:
+                vd = vd["name"]
             elif exclude and k in exclude and exclude[k] == vd:
                 continue
 
-            d['data'][k] = vd
+            d["data"][k] = vd
 
         return d
 
@@ -82,7 +80,7 @@ class _Event:
     def __init__(self, name: str, slots: Optional[Sequence[str]] = None):
         self.name = name
         slots = list(slots or [])
-        slots.append('call_id')
+        slots.append("call_id")
         self.slots = tuple(slots)
 
     def __call__(self, log: Optional[EventLogger], **kwargs):
@@ -91,7 +89,9 @@ class _Event:
 
         for slot in self.slots:
             if slot not in kwargs:
-                raise ValidationError("Event {} missing slot value for {}".format(self.name, slot))
+                raise ValidationError(
+                    "Event {} missing slot value for {}".format(self.name, slot)
+                )
 
         instance = _EventInstance(self.name, **kwargs)
         log(instance)
@@ -100,9 +100,8 @@ class _Event:
         return self.name
 
 
-
 ## Event definitions.
-# 
+#
 # The following events can be used for building Logging modules to report
 # decisions made by the feature gater.
 
@@ -146,7 +145,13 @@ Attributes:
 """
 
 
-ChoseVariant = _Event("ChoseVariant", ("variant", "sticky",))
+ChoseVariant = _Event(
+    "ChoseVariant",
+    (
+        "variant",
+        "sticky",
+    ),
+)
 """ChoseVariant is fired when a Variant is selected.
 
 Attributes:
@@ -173,7 +178,9 @@ Attributes:
 """
 
 
-CheckTime = _Event("CheckTime", ("entity", "time_key", "time", "after", "until", "result"))
+CheckTime = _Event(
+    "CheckTime", ("entity", "time_key", "time", "after", "until", "result")
+)
 """CheckTime is fired when a time range is being evaluated.
 
 Attributes:

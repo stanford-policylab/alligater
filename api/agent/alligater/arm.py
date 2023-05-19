@@ -1,7 +1,6 @@
 from .common import ValidationError
 
 
-
 class Arm:
     """An Arm represents a treatment group as a proportion of a population.
 
@@ -26,20 +25,22 @@ class Arm:
         if not isinstance(other, Arm):
             return False
 
-        return all([
-            self.variant_name == other.variant_name,
-            self.weight == other.weight,
-            ])
+        return all(
+            [
+                self.variant_name == other.variant_name,
+                self.weight == other.weight,
+            ]
+        )
 
     def __repr__(self):
         return "<Arm name={} weight={}>".format(self.variant_name, self.weight)
 
     def to_dict(self):
         return {
-                'type': 'Arm',
-                'variant': self.variant_name,
-                'weight': self.weight,
-                }
+            "type": "Arm",
+            "variant": self.variant_name,
+            "weight": self.weight,
+        }
 
     def validate(self):
         """Ensure configuration makes sense.

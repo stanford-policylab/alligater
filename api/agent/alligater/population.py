@@ -1,27 +1,27 @@
 import abc
 from typing import Any, Optional
 
-from .common import ValidationError
 import alligater.events as events
-import crocodsl.func as func
 import crocodsl.field as field
+import crocodsl.func as func
 
+from .common import ValidationError
 
 
 class PopulationSelector(abc.ABC):
-
     @abc.abstractmethod
     def validate(self):
         ...
 
     @abc.abstractmethod
-    def __call__(self, call_id: str, entity: Any, log: Optional[events.EventLogger]) -> bool:
+    def __call__(
+        self, call_id: str, entity: Any, log: Optional[events.EventLogger]
+    ) -> bool:
         ...
 
     @abc.abstractmethod
     def to_dict(self) -> dict:
         ...
-
 
 
 class DefaultSelector(PopulationSelector):
@@ -41,7 +41,9 @@ class DefaultSelector(PopulationSelector):
         Returns:
             Always True
         """
-        events.EvaluatePopulation(log, population=self, entity=entity, member=True, call_id=call_id)
+        events.EvaluatePopulation(
+            log, population=self, entity=entity, member=True, call_id=call_id
+        )
         return True
 
     def __eq__(self, other):
@@ -55,9 +57,9 @@ class DefaultSelector(PopulationSelector):
 
     def to_dict(self):
         return {
-                'type': 'Population',
-                'name': 'Default',
-                }
+            "type": "Population",
+            "name": "Default",
+        }
 
 
 class ExpressionSelector(PopulationSelector):
@@ -89,10 +91,14 @@ class ExpressionSelector(PopulationSelector):
         Returns:
             True or False indicating membership in this population.
         """
+
         def trace(name, args, result):
             events.EvalFunc(log, f=name, args=args, result=result, call_id=call_id)
+
         result = self.expression(entity, log=trace)
-        events.EvaluatePopulation(log, population=self, entity=entity, member=result, call_id=call_id)
+        events.EvaluatePopulation(
+            log, population=self, entity=entity, member=result, call_id=call_id
+        )
         return result
 
     def __eq__(self, other):
@@ -106,10 +112,10 @@ class ExpressionSelector(PopulationSelector):
 
     def to_dict(self):
         return {
-                'type': 'Population',
-                'name': 'Expression',
-                'expression': str(self.expression),
-                }
+            "type": "Population",
+            "name": "Expression",
+            "expression": str(self.expression),
+        }
 
 
 class PercentSelector(ExpressionSelector):
@@ -127,7 +133,7 @@ class PercentSelector(ExpressionSelector):
         self.percent = percent
         expression = func.Hash(func.Concat(seed, id_field)) <= percent
         super().__init__(expression)
-       
+
     def validate(self):
         """Ensures configuration makes sense.
 
@@ -156,9 +162,9 @@ class ExplicitSelector(ExpressionSelector):
         super().__init__(expression)
 
 
-
 class Population:
     """Predefined populations."""
+
     DEFAULT = DefaultSelector()
     Percent = PercentSelector
     Expression = ExpressionSelector

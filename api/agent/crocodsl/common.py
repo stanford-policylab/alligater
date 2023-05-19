@@ -1,10 +1,8 @@
-from typing import Any
 import inspect
 import sys
+from typing import Any
 
 import mmh3
-
-
 
 # Maximum value it's possible to represent as a 64-bit double.
 MAX_DOUBLE = float(0xFFFFFFFFFFFFFFFF)
@@ -22,14 +20,19 @@ def filter_kwargs(f, kwargs):
     """
     sig = inspect.signature(f)
     # If there is a **kwargs argument, pass all the arguments.
-    catch_all = any(v.kind is inspect.Parameter.VAR_KEYWORD and v.kind.value == 4 for v in sig.parameters.values())
+    catch_all = any(
+        v.kind is inspect.Parameter.VAR_KEYWORD and v.kind.value == 4
+        for v in sig.parameters.values()
+    )
     return {
-            k: v
-            for k, v in kwargs.items()
-            if catch_all or (
-                k in sig.parameters and
-                sig.parameters[k].kind is not inspect.Parameter.POSITIONAL_ONLY)
-            }
+        k: v
+        for k, v in kwargs.items()
+        if catch_all
+        or (
+            k in sig.parameters
+            and sig.parameters[k].kind is not inspect.Parameter.POSITIONAL_ONLY
+        )
+    }
 
 
 def dispatch(f, **kwargs):

@@ -1,27 +1,25 @@
 import unittest
 from datetime import datetime
 
+import alligater.parse as parse
 from crocodsl.field import _Field
 from crocodsl.func import Hash
-from .feature import Feature
-from .variant import Variant
+
 from .arm import Arm
-from .rollout import Rollout
+from .feature import Feature
 from .population import Population
-import alligater.parse as parse
-
-
+from .rollout import Rollout
+from .variant import Variant
 
 FIXTURES = {
-
-# The simplest possible gate specification.
-'simple': {
-    'feature': Feature(
-        'simplest_feature',
-        variants=[Variant('foo', 'This is the only value')],
-        default_arm=Arm('foo'),
+    # The simplest possible gate specification.
+    "simple": {
+        "feature": Feature(
+            "simplest_feature",
+            variants=[Variant("foo", "This is the only value")],
+            default_arm=Arm("foo"),
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: simplest_feature
           variants:
@@ -30,20 +28,19 @@ FIXTURES = {
           default_arm: foo
         """,
     },
-
-# Simple A/B gate
-'simple_ab': {
-    'feature': Feature(
-        'ab_feature',
-        variants=[
-            Variant('a', "This is the value for 'a'"),
-            Variant('b', "This is the value for 'b'"),
+    # Simple A/B gate
+    "simple_ab": {
+        "feature": Feature(
+            "ab_feature",
+            variants=[
+                Variant("a", "This is the value for 'a'"),
+                Variant("b", "This is the value for 'b'"),
             ],
-        rollouts=[
-            Rollout(arms=[Arm('a'), Arm('b')]),
+            rollouts=[
+                Rollout(arms=[Arm("a"), Arm("b")]),
             ],
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: ab_feature
           variants:
@@ -56,27 +53,26 @@ FIXTURES = {
               - b
         """,
     },
-
-# Fully specified A/B gate with unequal weights.
-'full_ab': {
-    'feature': Feature(
-        'ab_feature_full',
-        variants=[
-            Variant('a', "This is the value for 'a'"),
-            Variant('b', "This is the value for 'b'"),
+    # Fully specified A/B gate with unequal weights.
+    "full_ab": {
+        "feature": Feature(
+            "ab_feature_full",
+            variants=[
+                Variant("a", "This is the value for 'a'"),
+                Variant("b", "This is the value for 'b'"),
             ],
-        rollouts=[
-            Rollout(
-                name="default",
-                population=Population.DEFAULT,
-                arms=[
-                    Arm("a", 0.25),
-                    Arm("b", 0.75),
+            rollouts=[
+                Rollout(
+                    name="default",
+                    population=Population.DEFAULT,
+                    arms=[
+                        Arm("a", 0.25),
+                        Arm("b", 0.75),
                     ],
                 ),
             ],
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: ab_feature_full
           variants:
@@ -92,28 +88,27 @@ FIXTURES = {
                   weight: 0.75
         """,
     },
-
-# A/B with custom rollout randomizer
-'full_ab': {
-    'feature': Feature(
-        'ab_feature_custom_randomizer',
-        variants=[
-            Variant('a', "This is the value for 'a'"),
-            Variant('b', "This is the value for 'b'"),
+    # A/B with custom rollout randomizer
+    "full_ab": {
+        "feature": Feature(
+            "ab_feature_custom_randomizer",
+            variants=[
+                Variant("a", "This is the value for 'a'"),
+                Variant("b", "This is the value for 'b'"),
             ],
-        rollouts=[
-            Rollout(
-                name="default",
-                population=Population.DEFAULT,
-                arms=[
-                    Arm("a", 0.25),
-                    Arm("b", 0.75),
+            rollouts=[
+                Rollout(
+                    name="default",
+                    population=Population.DEFAULT,
+                    arms=[
+                        Arm("a", 0.25),
+                        Arm("b", 0.75),
                     ],
-                randomizer=Hash(_Field("custom")),
+                    randomizer=Hash(_Field("custom")),
                 ),
             ],
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: ab_feature_custom_randomizer
           variants:
@@ -130,27 +125,25 @@ FIXTURES = {
               randomizer: Hash($custom)
         """,
     },
-
-
-# Gate with multiple rollouts and populations. The second rollout is implied
-# from the `default_arm` setting.
-'multi_rollout': {
-    'feature': Feature(
-        'multi_rollout_feature',
-        variants=[
-            Variant("on", True),
-            Variant("off", False),
+    # Gate with multiple rollouts and populations. The second rollout is implied
+    # from the `default_arm` setting.
+    "multi_rollout": {
+        "feature": Feature(
+            "multi_rollout_feature",
+            variants=[
+                Variant("on", True),
+                Variant("off", False),
             ],
-        default_arm='off',
-        rollouts=[
-            Rollout(
-                name='test_segment',
-                population=Population.Percent(0.2, "some_seed"),
-                arms=['on'],
+            default_arm="off",
+            rollouts=[
+                Rollout(
+                    name="test_segment",
+                    population=Population.Percent(0.2, "some_seed"),
+                    arms=["on"],
                 ),
             ],
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: multi_rollout_feature
           variants:
@@ -167,45 +160,46 @@ FIXTURES = {
                 - "on"
         """,
     },
-
-# Fully-specified gate with multiple populations.
-'full_rollout': {
-    'feature': Feature(
-        name="multi_rollout_feature_full",
-        variants=[
-            Variant("a", "A"),
-            Variant("b", "B"),
-            Variant("off", None),
+    # Fully-specified gate with multiple populations.
+    "full_rollout": {
+        "feature": Feature(
+            name="multi_rollout_feature_full",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
             ],
-        default_arm=Arm("off"),
-        rollouts=[
-            Rollout(
-                name="temp_assignment_segment",
-                population=Population.Explicit(["id_temp"]),
-                arms=[Arm("off", weight=1.0)],
-                sticky=False,
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="temp_assignment_segment",
+                    population=Population.Explicit(["id_temp"]),
+                    arms=[Arm("off", weight=1.0)],
+                    sticky=False,
                 ),
-            Rollout(
-                name="test_segment_1",
-                population=Population.Percent(0.2, "some_seed"),
-                arms=[
-                    Arm("a", weight=0.5),
-                    Arm("b", weight=0.5),
+                Rollout(
+                    name="test_segment_1",
+                    population=Population.Percent(0.2, "some_seed"),
+                    arms=[
+                        Arm("a", weight=0.5),
+                        Arm("b", weight=0.5),
                     ],
                 ),
-            Rollout(
-                name="test_segment_2",
-                population=Population.Explicit(["id_1", "id_2", "id_3", "id_4"]),
-                arms=[Arm("a", weight=1.0)],
+                Rollout(
+                    name="test_segment_2",
+                    population=Population.Explicit(["id_1", "id_2", "id_3", "id_4"]),
+                    arms=[Arm("a", weight=1.0)],
                 ),
-            Rollout(
-                name="test_segment_3",
-                population=Population.Percent(0.5, "third_seed", id_field=_Field("non_standard_id")),
-                arms=['b', 'off'],
+                Rollout(
+                    name="test_segment_3",
+                    population=Population.Percent(
+                        0.5, "third_seed", id_field=_Field("non_standard_id")
+                    ),
+                    arms=["b", "off"],
                 ),
             ],
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: multi_rollout_feature_full
           variants:
@@ -254,28 +248,27 @@ FIXTURES = {
                 - "off"
         """,
     },
-
-# Gate with custom field in explicit population
-'custom_explicit': {
-    'feature': Feature(
-        name="custom_explicit",
-        variants=[
-            Variant("a", "A"),
-            Variant("b", "B"),
-            Variant("off", None),
+    # Gate with custom field in explicit population
+    "custom_explicit": {
+        "feature": Feature(
+            name="custom_explicit",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
             ],
-        default_arm=Arm("off"),
-        rollouts=[
-            Rollout(
-                name="test_segment_1",
-                population=Population.Explicit(
-                    ["id_1", "id_2", "id_3", "id_4"],
-                    id_field=_Field("custom")),
-                arms=[Arm("a", weight=1.0)],
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    population=Population.Explicit(
+                        ["id_1", "id_2", "id_3", "id_4"], id_field=_Field("custom")
+                    ),
+                    arms=[Arm("a", weight=1.0)],
                 ),
             ],
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: custom_explicit
           variants:
@@ -298,28 +291,27 @@ FIXTURES = {
                   weight: 1.0
         """,
     },
-
-# Gate with a custom expression in the population
-'custom_expression': {
-    'feature': Feature(
-        name="custom_expression",
-        variants=[
-            Variant("a", "A"),
-            Variant("b", "B"),
-            Variant("off", None),
+    # Gate with a custom expression in the population
+    "custom_expression": {
+        "feature": Feature(
+            name="custom_expression",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
             ],
-        default_arm=Arm("off"),
-        rollouts=[
-            Rollout(
-                name="test_segment_1",
-                population=Population.Expression(
-                    _Field("id").in_(["id_1", "id_2", "id_3", "id_4"]),
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    population=Population.Expression(
+                        _Field("id").in_(["id_1", "id_2", "id_3", "id_4"]),
                     ),
-                arms=[Arm("a", weight=1.0)],
+                    arms=[Arm("a", weight=1.0)],
                 ),
             ],
         ),
-    'yaml': """
+        "yaml": """
         feature:
           name: custom_expression
           variants:
@@ -337,32 +329,36 @@ FIXTURES = {
                   weight: 1.0
         """,
     },
-
 }
 
 
-
 class TestParse(unittest.TestCase):
-
     def assert_feature(self, name, objs):
-        parsed = parse.parse_yaml(objs['yaml'])
-        expected = objs['feature']
+        parsed = parse.parse_yaml(objs["yaml"])
+        expected = objs["feature"]
         actual = parsed[expected.name]
-        assert expected == actual, "Expected:\n{}\n\nActual:\n{}\n".format(expected.to_dict(), actual.to_dict())
+        assert expected == actual, "Expected:\n{}\n\nActual:\n{}\n".format(
+            expected.to_dict(), actual.to_dict()
+        )
 
     def test_parse(self):
         for k, v in FIXTURES.items():
             self.assert_feature(k, v)
 
     def test_merge(self):
-        parsed = parse.parse_yaml(FIXTURES['simple']['yaml'], default_features={
-            'simplest_feature': Feature(
-                'simplest_feature',
-                variants=[Variant('bar', 'This will be overridden')],
-                default_arm=Arm('bar'),
+        parsed = parse.parse_yaml(
+            FIXTURES["simple"]["yaml"],
+            default_features={
+                "simplest_feature": Feature(
+                    "simplest_feature",
+                    variants=[Variant("bar", "This will be overridden")],
+                    default_arm=Arm("bar"),
                 ),
-            })
+            },
+        )
 
-        actual = parsed['simplest_feature']
-        expected = FIXTURES['simple']['feature']
-        assert expected == actual, "Expected:\n{}\n\nActual:\n{}\n".format(expected.to_dict(), actual.to_dict())
+        actual = parsed["simplest_feature"]
+        expected = FIXTURES["simple"]["feature"]
+        assert expected == actual, "Expected:\n{}\n\nActual:\n{}\n".format(
+            expected.to_dict(), actual.to_dict()
+        )

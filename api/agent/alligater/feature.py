@@ -1,32 +1,32 @@
-from typing import cast, Any, Optional, Union, Callable, Awaitable, TYPE_CHECKING
 import asyncio
+from typing import (TYPE_CHECKING, Any, Awaitable, Callable, Optional, Union,
+                    cast)
 
-from .common import ValidationError, NoAssignment, get_uuid
-from .rollout import Rollout
-from .population import Population
-from .arm import Arm
-from .value import Value, CallType
-from .log import log as iolog
 import alligater.events as events
 
-if TYPE_CHECKING:
-    from .variant import Variant
-    from .cache import AssignmentCache
+from .arm import Arm
+from .common import NoAssignment, ValidationError, get_uuid
+from .log import log as iolog
+from .population import Population
+from .rollout import Rollout
+from .value import CallType, Value
 
+if TYPE_CHECKING:
+    from .cache import AssignmentCache
+    from .variant import Variant
 
 
 ExistingAssignment = tuple[str, Any]
 """An existing variant name / value that has been assigned."""
 
-AsyncAssignmentFetcher = Callable[['Feature', Any], Awaitable[ExistingAssignment]]
+AsyncAssignmentFetcher = Callable[["Feature", Any], Awaitable[ExistingAssignment]]
 """Fetch assignments asynchronously."""
 
-SyncAssignmentFetcher = Callable[['Feature', Any], ExistingAssignment]
+SyncAssignmentFetcher = Callable[["Feature", Any], ExistingAssignment]
 """Fetch assignments synchronously."""
 
 AssignmentFetcher = Union[AsyncAssignmentFetcher, SyncAssignmentFetcher]
 """Function to fetch existing assignments for a given feature/entity."""
-
 
 
 class Feature:
@@ -50,12 +50,13 @@ class Feature:
     `None` or "off"). The `default_arm` arg can be used to specify this easily.
     """
 
-    def __init__(self,
-            name: str,
-            variants: Optional[list['Variant']] = None,
-            rollouts: Optional[list[Rollout]] = None,
-            default_arm: Optional[Union[str, Arm]] = None,
-            ):
+    def __init__(
+        self,
+        name: str,
+        variants: Optional[list["Variant"]] = None,
+        rollouts: Optional[list[Rollout]] = None,
+        default_arm: Optional[Union[str, Arm]] = None,
+    ):
         """Create a new feature gate.
 
         A default Rollout must be provided; a shortcut to do this is to pass
@@ -80,18 +81,20 @@ class Feature:
 
         # Create a default rollout if one was specified
         if default_arm:
-            real_default_arm = Arm(default_arm, weight=1.0) \
-                    if type(default_arm) is str \
-                    else cast(Arm, default_arm)
+            real_default_arm = (
+                Arm(default_arm, weight=1.0)
+                if type(default_arm) is str
+                else cast(Arm, default_arm)
+            )
 
             if real_default_arm.weight is None:
                 real_default_arm.weight = 1.0
 
             default_rollout = Rollout(
-                    name=Rollout.DEFAULT,
-                    population=Population.DEFAULT,
-                    arms=[real_default_arm],
-                    )
+                name=Rollout.DEFAULT,
+                population=Population.DEFAULT,
+                arms=[real_default_arm],
+            )
             self.rollouts.append(default_rollout)
 
         # Make sure the configuration actually makes sense.
@@ -113,10 +116,16 @@ class Feature:
             raise ValidationError("At least one rollout needs to be defined.")
 
         if not any(r.name == Rollout.DEFAULT for r in self.rollouts):
-            raise ValidationError("At least one rollout named {} must be defined".format(Rollout.DEFAULT))
+            raise ValidationError(
+                "At least one rollout named {} must be defined".format(Rollout.DEFAULT)
+            )
 
         if not self.rollouts[-1].name == Rollout.DEFAULT:
-            raise ValidationError("The {} rollout must be the last rollout in the list".format(Rollout.DEFAULT))
+            raise ValidationError(
+                "The {} rollout must be the last rollout in the list".format(
+                    Rollout.DEFAULT
+                )
+            )
 
         [r.validate(self.variants) for r in self.rollouts]
 
@@ -124,29 +133,33 @@ class Feature:
         if not isinstance(other, Feature):
             return False
 
-        return all([
-            self.name == other.name,
-            self.variants == other.variants,
-            self.rollouts == other.rollouts,
-            ])
+        return all(
+            [
+                self.name == other.name,
+                self.variants == other.variants,
+                self.rollouts == other.rollouts,
+            ]
+        )
 
     def __repr__(self) -> str:
         return "<Feature name={}>".format(self.name)
 
     def to_dict(self) -> dict:
         return {
-                'type': 'Feature',
-                'name': self.name,
-                'variants': {k: v.to_dict() for k, v in self.variants.items()},
-                'rollouts': [r.to_dict() for r in self.rollouts],
-                }
+            "type": "Feature",
+            "name": self.name,
+            "variants": {k: v.to_dict() for k, v in self.variants.items()},
+            "rollouts": [r.to_dict() for r in self.rollouts],
+        }
 
-    async def __call__(self,
-            entity: Any,
-            log: Optional[events.EventLogger] = None,
-            call_id: Optional[str] = None,
-            sticky: Optional[AssignmentFetcher] = None,
-            assignment_cache: Optional['AssignmentCache'] = None) -> Value[Any]:
+    async def __call__(
+        self,
+        entity: Any,
+        log: Optional[events.EventLogger] = None,
+        call_id: Optional[str] = None,
+        sticky: Optional[AssignmentFetcher] = None,
+        assignment_cache: Optional["AssignmentCache"] = None,
+    ) -> Value[Any]:
         """Apply the gate to the given entity.
 
         Args:
@@ -190,16 +203,22 @@ class Feature:
                     variant_name, value = cached
                 else:
                     if asyncio.iscoroutinefunction(sticky):
-                        variant_name, value = await cast(AsyncAssignmentFetcher, sticky)(self, entity)
+                        variant_name, value = await cast(
+                            AsyncAssignmentFetcher, sticky
+                        )(self, entity)
                     else:
-                        variant_name, value = cast(SyncAssignmentFetcher, sticky)(self, entity)
+                        variant_name, value = cast(SyncAssignmentFetcher, sticky)(
+                            self, entity
+                        )
                 has_assignment = True
             except NoAssignment:
                 pass
             except Exception as e:
-                events.Error(log,
-                        message=f"error evaluating sticky assignment {e}",
-                        call_id=call_id)
+                events.Error(
+                    log,
+                    message=f"error evaluating sticky assignment {e}",
+                    call_id=call_id,
+                )
 
                 # Don't try to swallow exceptions, since it's now ambiguous
                 # whether a value was assigned and it could be problematic for
@@ -208,11 +227,13 @@ class Feature:
                 # exceptions should be handled in the `sticky` function itself.
                 raise
             finally:
-                events.StickyAssignment(log,
-                        variant=variant_name,
-                        value=value,
-                        assigned=has_assignment,
-                        call_id=call_id)
+                events.StickyAssignment(
+                    log,
+                    variant=variant_name,
+                    value=value,
+                    assigned=has_assignment,
+                    call_id=call_id,
+                )
                 if has_assignment:
                     events.LeaveFeature(log, value=value, call_id=call_id)
                     events.LeaveGate(log, value=value, call_id=call_id)
@@ -229,11 +250,14 @@ class Feature:
                 # not we want the assignment to be permanent.
                 is_sticky_assignment = bool(sticky) if r.sticky is None else r.sticky
                 if is_sticky_assignment and not sticky:
-                    iolog.warning(f'🏒 Rollout {r.name} requests a persistent (sticky) assignment, but no sticky assignment fetcher was passed into Alligater. This means assignments are probably being written but never read, which seems like an error in your code!')
+                    iolog.warning(
+                        f"🏒 Rollout {r.name} requests a persistent (sticky) assignment, but no sticky assignment fetcher was passed into Alligater. This means assignments are probably being written but never read, which seems like an error in your code!"
+                    )
 
-                events.ChoseVariant(log, variant=variant, sticky=is_sticky_assignment, call_id=call_id)
+                events.ChoseVariant(
+                    log, variant=variant, sticky=is_sticky_assignment, call_id=call_id
+                )
                 value = await variant(call_id, entity, log=log)
-
 
                 events.LeaveFeature(log, value=value, call_id=call_id)
                 if not nested:

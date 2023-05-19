@@ -1,8 +1,7 @@
-from collections.abc import Iterable, Sequence
 import re
+from collections.abc import Iterable, Sequence
 
 from .common import hash_id
-
 
 
 class _MetaExpression(type):
@@ -25,7 +24,6 @@ class _MetaExpression(type):
 
     def __repr__(self) -> str:
         return self.__name__
-
 
 
 class _Expression(metaclass=_MetaExpression):
@@ -113,7 +111,6 @@ class _Expression(metaclass=_MetaExpression):
         return str(self)
 
 
-
 class _ComposedExpression(_Expression):
     """Composition operator, as g(f(x))."""
 
@@ -137,7 +134,6 @@ class _ComposedExpression(_Expression):
         else:
             inners = ", ".join(all_reps)
         return f"{repr(self.outer)}({inners})"
-
 
 
 class _UnaryExpression(_Expression):
@@ -205,18 +201,18 @@ class _InfixExpression(_BinaryExpression):
 
 
 class _NAryExpression(_Expression):
-
     def __init__(self, *args):
         self.args = args
 
     def evaluate(self, *fargs, log=None, context=None):
-        return [a(*fargs, log=log, context=context) if callable(a) else a for a in self.args]
+        return [
+            a(*fargs, log=log, context=context) if callable(a) else a for a in self.args
+        ]
 
     def __repr__(self):
         op = repr(self.__class__)
         args = [repr(a) for a in self.args]
         return f"{op}({', '.join(args)})"
-
 
 
 ## Operator definitions
@@ -286,7 +282,7 @@ class Eq(_InfixExpression):
         return result
 
 
-Ne = Not[Eq] # type: ignore
+Ne = Not[Eq]  # type: ignore
 """Not equals operator."""
 
 
@@ -314,11 +310,11 @@ class Le(_InfixExpression):
         return result
 
 
-Gt = Not[Le] # type: ignore
+Gt = Not[Le]  # type: ignore
 """Greater than operator."""
 
 
-Ge = Not[Lt] # type: ignore
+Ge = Not[Lt]  # type: ignore
 """Greater than or equal to operator."""
 
 

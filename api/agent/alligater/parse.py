@@ -2,20 +2,21 @@ import traceback
 
 import requests
 import yaml
+
 try:
     from yaml import CLoader as Loader
 except ImportError:
-    from yaml import Loader # type: ignore
+    from yaml import Loader  # type: ignore
 
 from crocodsl import parse as parse_expression
-from .common import InvalidConfigError
-from .population import Population
-from .feature import Feature
-from .rollout import Rollout
-from .arm import Arm
-from .variant import Variant
-from .log import log
 
+from .arm import Arm
+from .common import InvalidConfigError
+from .feature import Feature
+from .log import log
+from .population import Population
+from .rollout import Rollout
+from .variant import Variant
 
 
 def _expand_variants(variants):
@@ -30,16 +31,16 @@ def _expand_variants(variants):
     result = []
 
     if type(variants) is dict:
-        variants = [{'name': k, 'value': v} for k, v in variants.items()]
+        variants = [{"name": k, "value": v} for k, v in variants.items()]
 
     if type(variants) is list:
         for v in variants:
-            value = v['value']
-            if type(value) is dict and 'feature' in value and len(value) == 1:
+            value = v["value"]
+            if type(value) is dict and "feature" in value and len(value) == 1:
                 # If the value is a nested feature, recurse
-                args = _expand_feature(value['feature'])
+                args = _expand_feature(value["feature"])
                 value = Feature(**args)
-            variant = Variant(v['name'], value)
+            variant = Variant(v["name"], value)
             result.append(variant)
     else:
         raise ValueError("Expected variants to be a list or map")
@@ -80,24 +81,24 @@ def _expand_population(population):
     if type(population) is str:
         return population
 
-    t = population['type'].lower()
-    if t == 'percent':
+    t = population["type"].lower()
+    if t == "percent":
         kwargs = {}
 
-        if 'field' in population:
-            kwargs['id_field'] = _expand_expression(population['field'])
+        if "field" in population:
+            kwargs["id_field"] = _expand_expression(population["field"])
 
-        return Population.Percent(population['value'], population['seed'], **kwargs)
-    elif t == 'expression':
-        expr = _expand_expression(population['value'])
+        return Population.Percent(population["value"], population["seed"], **kwargs)
+    elif t == "expression":
+        expr = _expand_expression(population["value"])
         return Population.Expression(expr)
-    elif t == 'explicit':
+    elif t == "explicit":
         kwargs = {}
 
-        if 'field' in population:
-            kwargs['id_field'] = _expand_expression(population['field'])
+        if "field" in population:
+            kwargs["id_field"] = _expand_expression(population["field"])
 
-        return Population.Explicit(population['value'], **kwargs)
+        return Population.Explicit(population["value"], **kwargs)
     else:
         raise NotImplemented("Unknown population type {}".format(t))
 
@@ -121,20 +122,20 @@ def _expand_arms(arms):
         if type(arm) is dict:
             args = {}
 
-            if 'variant' in arm:
-                args['variant_name'] = arm['variant']
+            if "variant" in arm:
+                args["variant_name"] = arm["variant"]
 
-            if 'variant_name' in arm:
-                args['variant_name'] = arm['variant_name']
+            if "variant_name" in arm:
+                args["variant_name"] = arm["variant_name"]
 
-            if 'weight' in arm:
-                args['weight'] = arm['weight']
+            if "weight" in arm:
+                args["weight"] = arm["weight"]
 
             result[i] = Arm(**args)
         elif type(arm) is str:
             result[i] = arm
         else:
-            raise ValueError('Unexpected type of arm: {}'.format(type(arm)))
+            raise ValueError("Unexpected type of arm: {}".format(type(arm)))
 
     return result
 
@@ -153,14 +154,14 @@ def _expand_rollouts(rollouts):
     for rollout in rollouts:
         args = rollout.copy()
 
-        if 'population' in args:
-            args['population'] = _expand_population(args['population'])
+        if "population" in args:
+            args["population"] = _expand_population(args["population"])
 
-        if 'arms' in args:
-            args['arms'] = _expand_arms(args['arms'])
+        if "arms" in args:
+            args["arms"] = _expand_arms(args["arms"])
 
-        if 'randomizer' in args:
-            args['randomizer'] = _expand_expression(args['randomizer'])
+        if "randomizer" in args:
+            args["randomizer"] = _expand_expression(args["randomizer"])
 
         result.append(Rollout(**args))
 
@@ -193,31 +194,35 @@ def _expand_feature(feature, default_feature=None):
     if default_feature:
         result.update(default_feature.to_dict())
 
-    if 'name' in feature:
-        if 'name' in result and result['name'] != feature['name']:
-            raise ValueError("Names of default feature and YAML feature differ! Got {}, expected {}".format(
-                result['name'], feature['name']))
-        result['name'] = feature['name']
+    if "name" in feature:
+        if "name" in result and result["name"] != feature["name"]:
+            raise ValueError(
+                "Names of default feature and YAML feature differ! Got {}, expected {}".format(
+                    result["name"], feature["name"]
+                )
+            )
+        result["name"] = feature["name"]
 
-    if 'variants' in feature:
-        result['variants'] = _expand_variants(feature['variants'])
+    if "variants" in feature:
+        result["variants"] = _expand_variants(feature["variants"])
 
-    if 'default_arm' in feature:
-        result['default_arm'] = _expand_default_arm(feature['default_arm'])
+    if "default_arm" in feature:
+        result["default_arm"] = _expand_default_arm(feature["default_arm"])
         # If the new YAML specifies a default arm, make sure to clear out any
         # default rollout specified in the original feature.
-        if 'rollouts' in result:
-            result['rollouts'] = [r for r in result['rollouts']
-                    if r['name'] != Rollout.DEFAULT]
+        if "rollouts" in result:
+            result["rollouts"] = [
+                r for r in result["rollouts"] if r["name"] != Rollout.DEFAULT
+            ]
 
-    if 'rollouts' in feature:
-        result['rollouts'] = _expand_rollouts(feature['rollouts'])
+    if "rollouts" in feature:
+        result["rollouts"] = _expand_rollouts(feature["rollouts"])
 
     # `type` is extraneous, remove it
-    if 'type' in result:
-        del result['type']
+    if "type" in result:
+        del result["type"]
 
-    name = result.pop('name')
+    name = result.pop("name")
     return Feature(name, **result)
 
 
@@ -238,9 +243,9 @@ def _parse_feature_yaml_str(s, default_features=None):
         result.update(default_features)
 
     for doc in yaml.load_all(s, Loader=Loader):
-        name = doc['feature']['name']
+        name = doc["feature"]["name"]
         default = default_features.get(name, None) if default_features else None
-        feature = _expand_feature(doc['feature'], default_feature=default)
+        feature = _expand_feature(doc["feature"], default_feature=default)
         result[name] = feature
 
     return result
@@ -295,10 +300,12 @@ def load_config(path, authorization=None):
     if path.startswith("http://") or path.startswith("https://"):
         headers = {}
         if authorization:
-            headers['Authorization'] = authorization
+            headers["Authorization"] = authorization
         r = requests.get(path, headers=headers)
         if r.status_code != 200:
-            raise RuntimeError("Failed to load config. Got status {}".format(r.status_code))
+            raise RuntimeError(
+                "Failed to load config. Got status {}".format(r.status_code)
+            )
         return r.text
     else:
         # Assume it was a local file path

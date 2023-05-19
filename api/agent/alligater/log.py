@@ -1,22 +1,21 @@
-from typing import Optional
-import atexit
-import signal
-import threading
-import sys
-import requests
 import abc
-import uuid
+import atexit
 import copy
 import logging
+import signal
+import sys
+import threading
+import uuid
+from datetime import datetime, timezone
+from typing import Optional
+
+import alligater.events as events
+import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.packages.urllib3.util.retry import Retry
-from datetime import datetime, timezone
 
-import alligater.events as events
-from .common import simple_object, encode_json, get_uuid, SkipLog
-
-
+from .common import SkipLog, encode_json, get_uuid, simple_object
 
 # Sys log (different than feature trace log)
 log = logging.getLogger("nudge.alligater")
@@ -26,12 +25,11 @@ default_now = lambda: datetime.now(timezone.utc)
 """Default `now` implementation."""
 
 
-
 class DeferrableLogger(events.EventLogger):
     """Traits for a logger that can be deferred."""
 
     @abc.abstractmethod
-    def write_log(self, call_id: str, extra: Optional[dict]=None):
+    def write_log(self, call_id: str, extra: Optional[dict] = None):
         """Write the log with the given ID.
 
         Args:
@@ -69,10 +67,12 @@ class ObjectLogger(DeferrableLogger):
         self._deferred = set()
         self._trace = trace
         self._stopped = False
-        self._workers = [threading.Thread(
-            name=f'ObjectLogger-io-{w}',
-            target=self._write_results,
-            daemon=True) for w in range(workers)]
+        self._workers = [
+            threading.Thread(
+                name=f"ObjectLogger-io-{w}", target=self._write_results, daemon=True
+            )
+            for w in range(workers)
+        ]
         [w.start() for w in self._workers]
 
         # Cleanup threads and try to drain the queue if possible when exiting.
@@ -93,45 +93,50 @@ class ObjectLogger(DeferrableLogger):
         with self._cv:
             if event == events.EnterGate:
                 self._cache[call_id] = {
-                        'ts': self._now(),
-                        'call_id': call_id,
-                        'entity': simple_object(event.entity, with_type=True),
-                        'feature': event.feature.to_dict(),
-                        'assignment': None,
-                        'variant': '',
-                        'trace': None if not self._trace else [],
-                        'repeat': False,
-                        'sticky': False,
-                        }
+                    "ts": self._now(),
+                    "call_id": call_id,
+                    "entity": simple_object(event.entity, with_type=True),
+                    "feature": event.feature.to_dict(),
+                    "assignment": None,
+                    "variant": "",
+                    "trace": None if not self._trace else [],
+                    "repeat": False,
+                    "sticky": False,
+                }
 
             if self._trace:
                 cur = self._cache[call_id]
-                d = event.asdict(exclude={
-                    'call_id': cur['call_id'],
-                    'entity': cur['entity']['value'],
-                    'feature': cur['feature'],
-                    }, compress=True)
-                self._cache[call_id]['trace'].append(d)
+                d = event.asdict(
+                    exclude={
+                        "call_id": cur["call_id"],
+                        "entity": cur["entity"]["value"],
+                        "feature": cur["feature"],
+                    },
+                    compress=True,
+                )
+                self._cache[call_id]["trace"].append(d)
 
             if event == events.ChoseVariant:
                 # There might be nested variants that get chosen if the feature
                 # is defined as a tree. In that case this will be called
                 # multiple times, but only the last (leaf) variant will stick.
-                self._cache[call_id]['variant'] = simple_object(event.variant)
-                self._cache[call_id]['sticky'] = event.sticky
+                self._cache[call_id]["variant"] = simple_object(event.variant)
+                self._cache[call_id]["sticky"] = event.sticky
 
             # Get assigned variant from the sticky assignment if it exists.
             if event == events.StickyAssignment and event.assigned:
-                self._cache[call_id].update({
-                    'variant': {
-                        'name': event.variant,
+                self._cache[call_id].update(
+                    {
+                        "variant": {
+                            "name": event.variant,
                         },
-                    'repeat': True,
-                    'sticky': True,
-                    })
+                        "repeat": True,
+                        "sticky": True,
+                    }
+                )
 
             if event == events.LeaveGate:
-                self._cache[call_id]['assignment'] = event.value
+                self._cache[call_id]["assignment"] = event.value
                 # Note that log is not written immediately. Call `write_log` to
                 # put it in the queue.
                 self._deferred.add(call_id)
@@ -146,17 +151,17 @@ class ObjectLogger(DeferrableLogger):
             # this moment in time.
             data = copy.deepcopy(self._cache[call_id])
             # If this event has been sent before, generate a new ID for it.
-            if data['repeat']:
-                data['call_id'] = get_uuid()
+            if data["repeat"]:
+                data["call_id"] = get_uuid()
 
             # Add extra data if it's given during this call.
             if extra:
-                data['extra'] = extra
+                data["extra"] = extra
 
             # Add to queue to publish.
             self._finished.append(data)
             # Mark the cached object as a repeat if it's logged again.
-            self._cache[call_id]['repeat'] = True
+            self._cache[call_id]["repeat"] = True
             # Wake a sender thread to broadcast the log.
             self._cv.notify()
 
@@ -198,7 +203,7 @@ class ObjectLogger(DeferrableLogger):
             with self._cv:
                 if not self._finished:
                     self._cv.wait()
-                
+
                 if self._stopped:
                     return
 
@@ -217,16 +222,18 @@ class ObjectLogger(DeferrableLogger):
 class NetworkLogger(ObjectLogger):
     """Logger that writes results over the network with retries."""
 
-    def __init__(self,
-            url,
-            headers=None,
-            auth=None,
-            body=None,
-            timeout=10.0,
-            max_retries=5,
-            backoff_factor=1.0,
-            debug=False,
-            **kwargs):
+    def __init__(
+        self,
+        url,
+        headers=None,
+        auth=None,
+        body=None,
+        timeout=10.0,
+        max_retries=5,
+        backoff_factor=1.0,
+        debug=False,
+        **kwargs,
+    ):
         """Create a logger that sends data to a remote endpoint.
 
         Args:
@@ -252,18 +259,30 @@ class NetworkLogger(ObjectLogger):
 
         # Configure http adapter
         http = requests.Session()
-        adapter = HTTPAdapter(max_retries=Retry(
-            total=max_retries,
-            status_forcelist=[413, 429, 500, 502, 503, 504],
-            allowed_methods=["HEAD", "OPTIONS", "POST", "GET", "PUT", "TRACE", "DELETE"],
-            backoff_factor=backoff_factor,
-            ))
+        adapter = HTTPAdapter(
+            max_retries=Retry(
+                total=max_retries,
+                status_forcelist=[413, 429, 500, 502, 503, 504],
+                allowed_methods=[
+                    "HEAD",
+                    "OPTIONS",
+                    "POST",
+                    "GET",
+                    "PUT",
+                    "TRACE",
+                    "DELETE",
+                ],
+                backoff_factor=backoff_factor,
+            )
+        )
         http.mount("http://", adapter)
         http.mount("https://", adapter)
         http.auth = auth
-        http.headers.update({
-            'Content-Type': 'application/json; charset=utf-8',
-            })
+        http.headers.update(
+            {
+                "Content-Type": "application/json; charset=utf-8",
+            }
+        )
         if headers:
             http.headers.update(headers)
         self._http = http
@@ -302,10 +321,8 @@ class NetworkLogger(ObjectLogger):
 
         try:
             s = self._serialize(data)
-            r = self._http.post(self._url,
-                    timeout=self._timeout,
-                    data=s)
-        
+            r = self._http.post(self._url, timeout=self._timeout, data=s)
+
             r.raise_for_status()
             self._debugw("Log written")
         except HTTPError as e:

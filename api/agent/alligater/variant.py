@@ -1,10 +1,10 @@
 import asyncio
 
+import alligater.events as events
+
 from .common import ValidationError
 from .feature import Feature
 from .value import Value
-import alligater.events as events
-
 
 
 class Variant:
@@ -63,11 +63,13 @@ class Variant:
         if not isinstance(other, Variant):
             return False
 
-        return all([
-            self.name == other.name,
-            self._value == other._value,
-            self.is_nested == other.is_nested,
-            ])
+        return all(
+            [
+                self.name == other.name,
+                self._value == other._value,
+                self.is_nested == other.is_nested,
+            ]
+        )
 
     def __repr__(self):
         return "<Variant name={}>".format(self.name)
@@ -75,11 +77,11 @@ class Variant:
     def to_dict(self):
         v = self._value
         return {
-                'type': 'Variant',
-                'name': self.name,
-                'value': v.to_dict() if hasattr(v, 'to_dict') else v,
-                'nested': self.is_nested,
-                }
+            "type": "Variant",
+            "name": self.name,
+            "value": v.to_dict() if hasattr(v, "to_dict") else v,
+            "nested": self.is_nested,
+        }
 
     async def __call__(self, call_id, entity, log=None):
         """Get the value for this variant.

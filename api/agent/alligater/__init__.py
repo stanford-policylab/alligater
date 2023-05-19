@@ -1,38 +1,23 @@
-from functools import partial
 import atexit
-import threading
 import hashlib
+import threading
 import time
+from functools import partial
 
-from .feature import Feature
-from .variant import Variant
 from .arm import Arm
-from .rollout import Rollout
-from .population import Population
 from .cache import AssignmentCache
-from .common import (
-        ValidationError,
-        MissingFeatureError,
-        NoAssignment,
-        NoConfig,
-        NoReload,
-        SkipLog,
-        LoadError,
-        encode_json,
-        simple_object,
-        )
-from .parse import parse_yaml, load_config
-from .value import Value, CallType
+from .common import (LoadError, MissingFeatureError, NoAssignment, NoConfig,
+                     NoReload, SkipLog, ValidationError, encode_json,
+                     simple_object)
+from .feature import Feature
+from .log import (DeferrableLogger, NetworkLogger, ObjectLogger, PrintLogger,
+                  default_logger, log)
+from .parse import load_config, parse_yaml
+from .population import Population
 from .rand import seed
-from .log import (
-        log,
-        default_logger,
-        ObjectLogger,
-        PrintLogger,
-        NetworkLogger,
-        DeferrableLogger,
-        )
-
+from .rollout import Rollout
+from .value import CallType, Value
+from .variant import Variant
 
 
 class Alligater:
@@ -52,14 +37,15 @@ class Alligater:
     in order to preserve and/or debug the assignment decisions it makes.
     """
 
-    def __init__(self,
-            features=None,
-            yaml=None,
-            logger=default_logger,
-            reload_interval=0,
-            sticky=None,
-            loader_kwargs=None,
-            ):
+    def __init__(
+        self,
+        features=None,
+        yaml=None,
+        logger=default_logger,
+        reload_interval=0,
+        sticky=None,
+        loader_kwargs=None,
+    ):
         """Create a new feature gater.
 
         Features can either come from a hardcoded predefined list or YAML.
@@ -116,7 +102,9 @@ class Alligater:
             log.warning("😤 No reload interval specified for Alligater.")
 
         if not self._features:
-            log.warning("🤬 Alligater was instantiated without any features! Was this intentional?")
+            log.warning(
+                "🤬 Alligater was instantiated without any features! Was this intentional?"
+            )
 
     def __getattr__(self, feature_name):
         """Get a function that will evaluate the given feature.
@@ -143,12 +131,17 @@ class Alligater:
             silent - Whether to suppress logging for this invocation
             deferred - Whether exposure logging should be deferred. Note that
             assignment logging can never be deferred.
-        
+
         Returns:
             Wrapped value of the variant to return.
         """
         logger = self._logger if not silent else None
-        value = await feature(entity, log=logger, sticky=self._sticky, assignment_cache=self._local_assignments)
+        value = await feature(
+            entity,
+            log=logger,
+            sticky=self._sticky,
+            assignment_cache=self._local_assignments,
+        )
         # Note that Logger implementations that aren't DeferrableLoggers
         # log immediately and calling `log` is just a no-op.
         if value.call_type == CallType.ASSIGNMENT:
@@ -163,7 +156,7 @@ class Alligater:
     def stop(self):
         """Stop the background reloader."""
         # Make sure that the logger stops if it can.
-        if self._logger and hasattr(self._logger, 'stop'):
+        if self._logger and hasattr(self._logger, "stop"):
             self._logger.stop()
 
         # Stop internal loader thread if necessary.
@@ -224,9 +217,11 @@ class Alligater:
                         # results in more predictable behavior -- if we always
                         # merged with the current list, transient mistakes in
                         # a config could propagate forever.
-                        self._features = parse_yaml(yaml_str,
-                                default_features=self._original_features,
-                                raise_exceptions=once)
+                        self._features = parse_yaml(
+                            yaml_str,
+                            default_features=self._original_features,
+                            raise_exceptions=once,
+                        )
                         self._old_sum = new_sum
                         log.debug("☺️ Updated to {}!".format(new_sum))
                         if once:
@@ -237,7 +232,9 @@ class Alligater:
                     if once:
                         raise LoadError("Failed to load feature spec") from e
                     else:
-                        log.error("😫 Alligater loader encountered an error: {}".format(e))
+                        log.error(
+                            "😫 Alligater loader encountered an error: {}".format(e)
+                        )
 
     def _checksum(self, s):
         """Compute checksum of a string.
@@ -248,21 +245,20 @@ class Alligater:
         Returns:
             Unique hash of the input
         """
-        return hashlib.sha256(s.encode('utf-8')).hexdigest()
-
+        return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 __all__ = [
-        'Alligater',
-        'Feature',
-        'Variant',
-        'Arm',
-        'Rollout',
-        'Population',
-        'ValidationError',
-        'events',
-        'seed',
-        'log',
-        'encode_json',
-        'simple_object',
-        ]
+    "Alligater",
+    "Feature",
+    "Variant",
+    "Arm",
+    "Rollout",
+    "Population",
+    "ValidationError",
+    "events",
+    "seed",
+    "log",
+    "encode_json",
+    "simple_object",
+]

@@ -1,12 +1,11 @@
 import unittest
 
 from .expr import parse
-from .func import *
 from .field import _Field
+from .func import *
 
 
 class TestExpr(unittest.TestCase):
-
     def test_parse_literal(self):
         """Test parsing into simple values."""
         assert parse("None")() == None
@@ -22,14 +21,31 @@ class TestExpr(unittest.TestCase):
         assert parse('"hello"')() == "hello"
         assert parse(r'"say \"hi\""')() == 'say "hi"'
         assert parse(r"'say \'hi\''")() == "say 'hi'"
-        assert parse("""
+        assert (
+            parse(
+                """
             "this 'should' work"
-        """)() == "this 'should' work"
-        assert parse('''
+        """
+            )()
+            == "this 'should' work"
+        )
+        assert (
+            parse(
+                """
             'this "should" work'
-        ''')() == 'this "should" work'
-        assert parse("[1,2,3]")() == [1,2,3]
-        assert parse("[True, 'hi', 1, 2.5, [1,2,3], None]")() == [True, 'hi', 1, 2.5, [1, 2, 3], None]
+        """
+            )()
+            == 'this "should" work'
+        )
+        assert parse("[1,2,3]")() == [1, 2, 3]
+        assert parse("[True, 'hi', 1, 2.5, [1,2,3], None]")() == [
+            True,
+            "hi",
+            1,
+            2.5,
+            [1, 2, 3],
+            None,
+        ]
         assert parse(r"'hi\nwith\tescapes'")() == "hi\nwith\tescapes"
 
     def test_parse_field(self):
@@ -49,8 +65,13 @@ class TestExpr(unittest.TestCase):
             def foo(self, *, value):
                 return {"value": value}
 
-        assert parse("$foo.$value")(A(), context={'value': 'hi'}) == 'hi'
-        assert parse("Concat($foo.$value, ', you') Eq 'hi, you'")(A(), context={'value': 'hi'}) is True
+        assert parse("$foo.$value")(A(), context={"value": "hi"}) == "hi"
+        assert (
+            parse("Concat($foo.$value, ', you') Eq 'hi, you'")(
+                A(), context={"value": "hi"}
+            )
+            is True
+        )
 
     def test_parse_compare(self):
         """Parse comparisons."""
@@ -73,25 +94,39 @@ class TestExpr(unittest.TestCase):
         """Test calling other functions."""
         assert parse("Hash('foo')").equivalent(Hash("foo"))
         assert parse("Hash('foo')")() == 0.8845447504445093
-        assert parse("Hash(Concat($prefix, ':', $id))").equivalent(Hash(Concat(_Field("prefix"), ":", _Field("id"))))
-        assert parse("Hash(Concat($prefix, ':', $id))")({"prefix": "pfx", "id": "123"}) == 0.07302924453117249
+        assert parse("Hash(Concat($prefix, ':', $id))").equivalent(
+            Hash(Concat(_Field("prefix"), ":", _Field("id")))
+        )
+        assert (
+            parse("Hash(Concat($prefix, ':', $id))")({"prefix": "pfx", "id": "123"})
+            == 0.07302924453117249
+        )
 
     def test_compose(self):
         """More tests for composition of operators."""
-        assert parse("Hash(Concat('test-', $id)) Lt 0.5").equivalent(Hash(Concat("test-", _Field("id"))) < 0.5)
+        assert parse("Hash(Concat('test-', $id)) Lt 0.5").equivalent(
+            Hash(Concat("test-", _Field("id"))) < 0.5
+        )
         # "test-foo" hashes to: 0.6399548871841495
         assert parse("Hash(Concat('test-', $id)) Lt 0.5")({"id": "foo"}) is False
 
-        assert parse("Hash($id) Lt 0.5 Or $id In ['a', 'b', 'c']").equivalent(Or(Hash(_Field("id")) < 0.5, _Field("id").in_(['a', 'b', 'c'])))
+        assert parse("Hash($id) Lt 0.5 Or $id In ['a', 'b', 'c']").equivalent(
+            Or(Hash(_Field("id")) < 0.5, _Field("id").in_(["a", "b", "c"]))
+        )
         # "c" hashes to 0.5555553092364088, but is in the list
         assert parse("Hash($id) Lt 0.5 Or $id In ['a', 'b', 'c']")({"id": "c"}) is True
 
-        assert parse("(Concat($first_name, ' ', $last_name) Matches 'foo') Or ($outcomes Has 'xyz')").equivalent(
-                Concat(_Field("first_name"), ' ', _Field("last_name")).matches('foo').or_(_Field("outcomes").has('xyz'))
-                )
+        assert parse(
+            "(Concat($first_name, ' ', $last_name) Matches 'foo') Or ($outcomes Has 'xyz')"
+        ).equivalent(
+            Concat(_Field("first_name"), " ", _Field("last_name"))
+            .matches("foo")
+            .or_(_Field("outcomes").has("xyz"))
+        )
 
     def test_inverse(self):
         """Test that str reps of parses are also parsable."""
+
         def t(exp, s):
             assert str(exp) == s
             assert exp.equivalent(parse(s))
@@ -105,17 +140,27 @@ class TestExpr(unittest.TestCase):
         t(Literal(True), "True")
         t(Literal(False), "False")
         t(Literal([1, 2, 3]), "[1, 2, 3]")
-        t(Literal([None, False, [1, 2, 'foo', 55.123, -43.41]]),
-                "[None, False, [1, 2, 'foo', 55.123, -43.41]]")
-        t(Ne('foo', 'bar'), "Not('foo' Eq 'bar')")
+        t(
+            Literal([None, False, [1, 2, "foo", 55.123, -43.41]]),
+            "[None, False, [1, 2, 'foo', 55.123, -43.41]]",
+        )
+        t(Ne("foo", "bar"), "Not('foo' Eq 'bar')")
         t(Gt(10, 9), "Not(10 Le 9)")
         t(Ge(10, 9), "Not(10 Lt 9)")
-        t(Hash('foo'), "Hash('foo')")
+        t(Hash("foo"), "Hash('foo')")
         t(Hash(_Field("foo")), "Hash($foo)")
-        t(Hash(Concat("prefix", ":", _Field("foo"))), "Hash(Concat('prefix', ':', $foo))")
-        t(Eq(_Field("id"), "foo"), "$id Eq 'foo'")
-        t(And(_Field("id") == "foo", Hash(_Field("id")) < 0.5), "($id Eq 'foo') And (Hash($id) Lt 0.5)")
         t(
-                Concat(_Field("first_name"), ' ', _Field("last_name")).matches('foo').or_(_Field("outcomes").has('xyz')),
-                "(Concat($first_name, ' ', $last_name) Matches 'foo') Or ('xyz' In $outcomes)"
-                )
+            Hash(Concat("prefix", ":", _Field("foo"))),
+            "Hash(Concat('prefix', ':', $foo))",
+        )
+        t(Eq(_Field("id"), "foo"), "$id Eq 'foo'")
+        t(
+            And(_Field("id") == "foo", Hash(_Field("id")) < 0.5),
+            "($id Eq 'foo') And (Hash($id) Lt 0.5)",
+        )
+        t(
+            Concat(_Field("first_name"), " ", _Field("last_name"))
+            .matches("foo")
+            .or_(_Field("outcomes").has("xyz")),
+            "(Concat($first_name, ' ', $last_name) Matches 'foo') Or ('xyz' In $outcomes)",
+        )

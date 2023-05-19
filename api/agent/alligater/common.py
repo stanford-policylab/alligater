@@ -1,12 +1,11 @@
-from typing import Any
 import collections.abc
 import dataclasses
 import json
 import uuid
-from datetime import datetime, date
+from datetime import date, datetime
+from typing import Any
 
 from .rand import getrandbits
-
 
 
 def get_uuid() -> str:
@@ -50,13 +49,13 @@ def simple_object(value: Any, with_type=False):
         d = dataclasses.asdict(value)
         # If a dataclass defins a synthetic `id` using the `@property`
         # decorator, make sure it gets included in the serialization.
-        if hasattr(value, 'id'):
-            d['id'] = value.id
-    elif hasattr(value, 'asdict'):
+        if hasattr(value, "id"):
+            d["id"] = value.id
+    elif hasattr(value, "asdict"):
         d = value.asdict()
-    elif hasattr(value, 'to_dict'):
+    elif hasattr(value, "to_dict"):
         d = value.to_dict()
-    elif hasattr(value, 'to_json'):
+    elif hasattr(value, "to_json"):
         d = value.to_json()
     else:
         d = json.loads(encode_json(value))
@@ -64,9 +63,9 @@ def simple_object(value: Any, with_type=False):
     if not with_type:
         return d
     return {
-            "type": type(value).__name__,
-            "value": d,
-            }
+        "type": type(value).__name__,
+        "value": d,
+    }
 
 
 def _json_default_encoder(obj: Any) -> str:
@@ -99,31 +98,37 @@ def encode_json(data: Any) -> str:
 
 class ValidationError(Exception):
     """Error to throw when validating features."""
+
     pass
 
 
 class InvalidConfigError(Exception):
     """Error thrown when YAML config can't be loaded."""
+
     pass
 
 
 class MissingFeatureError(Exception):
     """Error thrown when trying to access an undefined feature."""
+
     pass
 
 
 class NoConfig(Exception):
     """Thrown when no YAML config path is provided."""
+
     pass
 
 
 class NoReload(Exception):
     """Thrown when no reload interval is given."""
+
     pass
 
 
 class LoadError(Exception):
     """Thrown when reloader fails to load YAML."""
+
     pass
 
 
@@ -133,9 +138,11 @@ class NoAssignment(Exception):
     Throw this in the `sticky` callback to indicate the feature should be
     evaluated because there is no assignment yet.
     """
+
     pass
 
 
 class SkipLog(Exception):
     """Raise this exception to prevent logging."""
+
     pass

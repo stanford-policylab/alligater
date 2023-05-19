@@ -1,9 +1,8 @@
 import unittest
 from dataclasses import dataclass
 
-import crocodsl.func as func
 import crocodsl.field as field
-
+import crocodsl.func as func
 
 
 @dataclass
@@ -12,7 +11,6 @@ class User:
 
 
 class TestField(unittest.TestCase):
-
     def test_entity_id(self):
         """Test getting the entity ID."""
         assert field.ID(User("abc")) == "abc"

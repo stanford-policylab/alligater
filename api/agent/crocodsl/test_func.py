@@ -3,42 +3,46 @@ import unittest
 import crocodsl.func as func
 
 
-
 class TestFunc(unittest.TestCase):
-
     def test_op_repr(self):
         """Test the representations of the operators."""
-        assert repr(func.Eq) == 'Eq'
-        assert repr(func.Ne) == 'Not(Eq)'
-        assert repr(func.And) == 'And'
-        assert repr(func.Or) == 'Or'
-        assert repr(func.Not) == 'Not'
-        assert repr(func.Lt) == 'Lt'
-        assert repr(func.Le) == 'Le'
-        assert repr(func.Gt) == 'Not(Le)'
-        assert repr(func.Ge) == 'Not(Lt)'
-        assert repr(func.In) == 'In'
-        assert repr(func.Concat) == 'Concat'
-        assert repr(func.Hash) == 'Hash'
-        assert repr(func.Len) == 'Len'
-        assert repr(func.Matches) == 'Matches'
+        assert repr(func.Eq) == "Eq"
+        assert repr(func.Ne) == "Not(Eq)"
+        assert repr(func.And) == "And"
+        assert repr(func.Or) == "Or"
+        assert repr(func.Not) == "Not"
+        assert repr(func.Lt) == "Lt"
+        assert repr(func.Le) == "Le"
+        assert repr(func.Gt) == "Not(Le)"
+        assert repr(func.Ge) == "Not(Lt)"
+        assert repr(func.In) == "In"
+        assert repr(func.Concat) == "Concat"
+        assert repr(func.Hash) == "Hash"
+        assert repr(func.Len) == "Len"
+        assert repr(func.Matches) == "Matches"
 
     def test_expr_repr(self):
         """Test the representations of expressions."""
         assert repr(func.Eq("a", "b")) == "'a' Eq 'b'"
         assert repr(func.Ne("a", "b")) == "Not('a' Eq 'b')"
-        assert repr(
+        assert (
+            repr(
                 func.And(
                     func.Eq("a", "a"),
                     func.Lt(10, 11),
-                    )
-                ) == "('a' Eq 'a') And (10 Lt 11)"
-        assert repr(
+                )
+            )
+            == "('a' Eq 'a') And (10 Lt 11)"
+        )
+        assert (
+            repr(
                 func.Or(
                     func.Eq("a", "b"),
                     func.Lt(10, 11),
-                    )
-                ) == "('a' Eq 'b') Or (10 Lt 11)"
+                )
+            )
+            == "('a' Eq 'b') Or (10 Lt 11)"
+        )
         assert repr(func.Not(True)) == "Not(True)"
         assert repr(func.Le(10, 10)) == "10 Le 10"
         assert repr(func.Gt(11, 10)) == "Not(11 Le 10)"
@@ -47,7 +51,7 @@ class TestFunc(unittest.TestCase):
         assert repr(func.Concat("a", "b", "c")) == "Concat('a', 'b', 'c')"
         assert repr(func.Hash("foo")) == "Hash('foo')"
         assert repr(func.Has([1, 2, 3], 1) == "1 In [1, 2, 3]")
-        assert repr(func.Matches("Foo", r'.*') == "'Foo' Matches '.*'")
+        assert repr(func.Matches("Foo", r".*") == "'Foo' Matches '.*'")
 
     def test_eq(self):
         """Test equality."""
@@ -65,41 +69,65 @@ class TestFunc(unittest.TestCase):
 
     def test_and(self):
         """Test and."""
-        assert func.And(
+        assert (
+            func.And(
                 func.Eq("a", "a"),
                 func.Eq(1, 1),
-                )() is True
-        assert func.And(
+            )()
+            is True
+        )
+        assert (
+            func.And(
                 func.Eq("a", "a"),
                 func.Eq(1, 0),
-                )() is False
-        assert func.And(
+            )()
+            is False
+        )
+        assert (
+            func.And(
                 func.Eq("a", "b"),
                 func.Eq(1, 0),
-                )() is False
-        assert func.And(
+            )()
+            is False
+        )
+        assert (
+            func.And(
                 func.Eq("a", "b"),
                 func.Eq(1, 1),
-                )() is False
+            )()
+            is False
+        )
 
     def test_or(self):
         """Test or."""
-        assert func.Or(
+        assert (
+            func.Or(
                 func.Eq("a", "a"),
                 func.Eq(1, 1),
-                )() is True
-        assert func.Or(
+            )()
+            is True
+        )
+        assert (
+            func.Or(
                 func.Eq("a", "a"),
                 func.Eq(1, 0),
-                )() is True
-        assert func.Or(
+            )()
+            is True
+        )
+        assert (
+            func.Or(
                 func.Eq("a", "b"),
                 func.Eq(1, 0),
-                )() is False
-        assert func.Or(
+            )()
+            is False
+        )
+        assert (
+            func.Or(
                 func.Eq("a", "b"),
                 func.Eq(1, 1),
-                )() is True
+            )()
+            is True
+        )
 
     def test_not(self):
         """Test negation."""
@@ -137,7 +165,7 @@ class TestFunc(unittest.TestCase):
         assert func.In("c", ["a", "b", "c"])() is True
         assert func.In("x", ["a", "b", "c"])() is False
         assert func.In("x", None)() is False
-    
+
     def test_has(self):
         """Test reverse containment."""
         assert func.Has(["a", "b", "c"], "a")() is True
@@ -158,15 +186,23 @@ class TestFunc(unittest.TestCase):
         """Test length."""
         assert func.Len([1, 2, 3]) == 3
         assert func.Len("abc") == 3
-        assert func.Len(("a", "b",)) == 2
+        assert (
+            func.Len(
+                (
+                    "a",
+                    "b",
+                )
+            )
+            == 2
+        )
         assert func.Len({"a": 1, "b": 2, "c": 3}) == 3
 
     def test_matches(self):
         """Test regex matching."""
-        assert func.Matches("foo", r'.*')() is True
-        assert func.Matches("foo", r'^f')() is True
-        assert func.Matches("bar", r'^f')() is False
-        assert func.Matches("a.b.c", r'\.b\.')() is True
+        assert func.Matches("foo", r".*")() is True
+        assert func.Matches("foo", r"^f")() is True
+        assert func.Matches("bar", r"^f")() is False
+        assert func.Matches("a.b.c", r"\.b\.")() is True
 
     def test_composition(self):
         """Make sure functions can be composed."""
@@ -186,7 +222,10 @@ class TestFunc(unittest.TestCase):
         assert repr(func.Hash("abc") >= 0.7) == "Not(Hash('abc') Lt 0.7)"
         assert (func.Hash("abc") >= 0.7)() is True
 
-        assert repr(func.Hash("abc") == 0.7054175881782409) == "Hash('abc') Eq 0.7054175881782409"
+        assert (
+            repr(func.Hash("abc") == 0.7054175881782409)
+            == "Hash('abc') Eq 0.7054175881782409"
+        )
         assert (func.Hash("abc") == 0.7054175881782409)() is True
 
         assert repr(func.Hash("abc") != 0.7) == "Not(Hash('abc') Eq 0.7)"

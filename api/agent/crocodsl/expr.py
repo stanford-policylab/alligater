@@ -1,11 +1,10 @@
-from antlr4 import *
-from .gram.GramLexer import GramLexer
-from .gram.GramParser import GramParser
-from .gram.GramListener import GramListener
 import crocodsl.func as func
+from antlr4 import *
+
 from .field import _Field
-
-
+from .gram.GramLexer import GramLexer
+from .gram.GramListener import GramListener
+from .gram.GramParser import GramParser
 
 IDENT = lambda x: x
 """A no-op to return the input of a function."""
@@ -18,12 +17,12 @@ IDENT = lambda x: x
 # that need to be escaped, so they are not included in this map. It's also a
 # good fallback for escaping characters that don't need to be escaped.
 ESCAPE = {
-        'n': '\n', # newline
-        'r': '\r', # carriage return
-        't': '\t', # tab
-        'b': '\b', # backspace
-        'f': '\f', # form feed
-        }
+    "n": "\n",  # newline
+    "r": "\r",  # carriage return
+    "t": "\t",  # tab
+    "b": "\b",  # backspace
+    "f": "\f",  # form feed
+}
 """A map of character values for escape codes."""
 
 
@@ -70,7 +69,7 @@ class ExprCompiler(GramListener):
 
     def enterArray(self, ctx):
         self._enterNode(ctx, lambda *x: list(x), [])
-    
+
     def exitArray(self, ctx):
         self._leaveNode(ctx)
 
@@ -87,7 +86,7 @@ class ExprCompiler(GramListener):
         self._leaveNode(ctx)
 
     def enterBoolean(self, ctx):
-        self._enterNode(ctx, lambda x: x == 'True', [ctx.BOOL().getText()])
+        self._enterNode(ctx, lambda x: x == "True", [ctx.BOOL().getText()])
 
     def exitBoolean(self, ctx):
         self._leaveNode(ctx)
@@ -97,7 +96,7 @@ class ExprCompiler(GramListener):
         raw_str = ctx.getText()[1:-1]
 
         # Interpret escape sequences
-        s = ''
+        s = ""
         escaped = False
         for char in raw_str:
             if escaped:
@@ -123,7 +122,7 @@ class ExprCompiler(GramListener):
 
     def exitInt(self, ctx):
         self._leaveNode(ctx)
-    
+
     def enterFloat(self, ctx):
         self._enterNode(ctx, float, [ctx.getText()])
 
@@ -139,8 +138,9 @@ class ExprCompiler(GramListener):
         self._leaveNode(ctx)
 
     def enterAttribute(self, ctx):
-        self._enterNode(ctx, _Field, [attr.NAME().getText()
-            for attr in ctx.nested_attr().attr()])
+        self._enterNode(
+            ctx, _Field, [attr.NAME().getText() for attr in ctx.nested_attr().attr()]
+        )
 
     def exitAttribute(self, ctx):
         self._leaveNode(ctx)
@@ -195,7 +195,6 @@ class ExprCompiler(GramListener):
             self.root = value
 
 
-
 def _compile(s, debug=False):
     """Parse the symbolic expression and return the full parse tree.
 
@@ -215,7 +214,7 @@ def _compile(s, debug=False):
     walker = ParseTreeWalker()
     walker.walk(compiler, parser.expr())
     return compiler
-    
+
 
 def parse(s, debug=False):
     """Parse a given symbolic expression into an _Expression.

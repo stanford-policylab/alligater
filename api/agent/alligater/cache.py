@@ -1,9 +1,8 @@
-from typing import Tuple, Any, Protocol, Optional, TYPE_CHECKING
 from threading import Lock
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Tuple
 
 if TYPE_CHECKING:
     from .feature import Feature
-
 
 
 EntityId = Tuple[str, str]
@@ -26,10 +25,10 @@ def _entity_id(entity: Any) -> EntityId:
         Tuple with typename and ID.
     """
     entity_id = None
-    if hasattr(entity, 'id'):
+    if hasattr(entity, "id"):
         entity_id = entity.id
-    elif 'id' in entity:
-        entity_id = entity['id']
+    elif "id" in entity:
+        entity_id = entity["id"]
     else:
         entity_id = repr(entity_id)
 
@@ -52,7 +51,7 @@ class AssignmentCache:
         with self.lock:
             self.cache.clear()
 
-    def set(self, feature: 'Feature', entity: Any, variant: str, value: Any):
+    def set(self, feature: "Feature", entity: Any, variant: str, value: Any):
         """Add a new item to the cache.
 
         Args:
@@ -66,7 +65,7 @@ class AssignmentCache:
                 self.cache[feature.name] = {}
             self.cache[feature.name][_entity_id(entity)] = (variant, value)
 
-    def get(self, feature: 'Feature', entity: Any) -> Optional[CachedAssignment]:
+    def get(self, feature: "Feature", entity: Any) -> Optional[CachedAssignment]:
         """Look up cached assignment.
 
         Args:

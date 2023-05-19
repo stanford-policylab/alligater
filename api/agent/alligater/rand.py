@@ -1,12 +1,10 @@
 import random
 from typing import Optional, Union
 
-
-
 _rand: Union[random.Random, random.SystemRandom] = random.SystemRandom()
 
 
-def seed(num: Optional[int]=None):
+def seed(num: Optional[int] = None):
     """Seed the random number generator.
 
     By default, and if no seed is given, we will use the system's best random
