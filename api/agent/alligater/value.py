@@ -1,6 +1,6 @@
 import math
 from enum import Enum
-from typing import Any, Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from .events import EventLogger
 from .log import DeferrableLogger
@@ -68,7 +68,7 @@ class Value(Generic[T]):
             # If the call type wasn't already an exposure, it should be now!
             self._call_type = CallType.EXPOSURE
 
-    ## PROXY ALL THE DUNDER METHODS TO THE INTERNAL VALUE ##
+    # == PROXY ALL THE DUNDER METHODS TO THE INTERNAL VALUE ==
 
     def __eq__(self, other):
         return self._value == other

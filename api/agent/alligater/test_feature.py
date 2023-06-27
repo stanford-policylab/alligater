@@ -1,6 +1,5 @@
 import unittest
 from dataclasses import dataclass
-from datetime import datetime
 
 from crocodsl.field import _Field
 from crocodsl.func import Hash
@@ -94,7 +93,7 @@ class TestFeature(unittest.IsolatedAsyncioTestCase):
 
         # The my_seed Population hashes to: 0.9791994382873984
         # So it gets the default variant.
-        assert await f(User("1")) == None
+        assert await f(User("1")) == None  # noqa: E711
 
         # my_seed Population hashes to: 0.11176176296782649
         # test_segment_1 hashes to: 0.19817491497580958
@@ -130,9 +129,9 @@ class TestFeature(unittest.IsolatedAsyncioTestCase):
             ],
         )
 
-        assert await f({"id": "id_2"}) == None
+        assert await f({"id": "id_2"}) == None  # noqa: E711
         assert await f({"custom": "id_2"}) == "A"
-        assert await f({"custom": "other"}) == None
+        assert await f({"custom": "other"}) == None  # noqa: E711
         # When the attribute returns a list, the `in` test uses ANY semantics.
         assert await f({"custom": ["other", "id_2"]}) == "A"
 
@@ -202,7 +201,7 @@ class TestFeature(unittest.IsolatedAsyncioTestCase):
         assert v == "B"
         assert v.call_type == CallType.EXPOSURE
         v = await f({"custom": "id_1"}, log=print, sticky=_sticky_none)
-        assert v == None
+        assert v == None  # noqa: E711
         assert v.call_type == CallType.EXPOSURE
         v = await f({"custom": "id_1"}, log=print, sticky=_sticky_no_assignment)
         assert v == "A"

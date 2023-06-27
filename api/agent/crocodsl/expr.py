@@ -1,13 +1,16 @@
+from antlr4 import CommonTokenStream, InputStream, ParseTreeWalker
+
 import crocodsl.func as func
-from antlr4 import *
 
 from .field import _Field
 from .gram.GramLexer import GramLexer
 from .gram.GramListener import GramListener
 from .gram.GramParser import GramParser
 
-IDENT = lambda x: x
-"""A no-op to return the input of a function."""
+
+def IDENT(x):
+    """A no-op to return the input of a function."""
+    return x
 
 
 # Escape codes are the same ones used in JSON:

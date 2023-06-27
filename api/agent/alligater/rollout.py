@@ -3,7 +3,6 @@ from typing import Any, Optional, Sequence, Union, cast
 import alligater.events as events
 import crocodsl.field as field
 import crocodsl.func as func
-from crocodsl.common import get_entity_field
 
 from .arm import Arm
 from .common import ValidationError
@@ -132,7 +131,7 @@ class Rollout:
         unk_weight = remainder / float(unknown) if unknown > 0 else 0.0
 
         # Fill in any unspecified weights
-        for i, arm in enumerate(result):
+        for arm in result:
             if arm.weight is None:
                 arm.weight = unk_weight
 

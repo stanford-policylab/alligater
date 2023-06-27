@@ -1,5 +1,4 @@
 import unittest
-from datetime import datetime
 
 import alligater.parse as parse
 from crocodsl.field import _Field
@@ -89,7 +88,7 @@ FIXTURES = {
         """,
     },
     # A/B with custom rollout randomizer
-    "full_ab": {
+    "full_ab_custom": {
         "feature": Feature(
             "ab_feature_custom_randomizer",
             variants=[

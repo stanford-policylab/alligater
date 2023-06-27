@@ -2,7 +2,6 @@ import asyncio
 import copy
 import json
 import threading
-import time
 import unittest
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -10,7 +9,7 @@ from datetime import datetime, timezone
 import responses
 
 from .arm import Arm
-from .common import NoAssignment
+from .common import NoAssignment, SkipLog
 from .feature import Feature
 from .log import NetworkLogger, ObjectLogger
 from .population import Population
@@ -18,7 +17,11 @@ from .rollout import Rollout
 from .variant import Variant
 
 fake_now = datetime(2022, 1, 29, 12, 11, 10, 0, tzinfo=timezone.utc)
-mock_now = lambda: fake_now
+
+
+def mock_now():
+    return fake_now
+
 
 mock_url = "https://test.glen/graphql"
 
@@ -144,7 +147,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
         log2 = copy.deepcopy(log1)
         log2.update(
             {
-                "call_id": "f728b4fa-4248-5e3a-0a5d-2f346baa9455",
+                "call_id": log1["call_id"] + ":1",
                 "repeat": True,
             }
         )
@@ -297,7 +300,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
             [
                 {
                     "ts": fake_now,
-                    "call_id": "f728b4fa-4248-5e3a-0a5d-2f346baa9455",
+                    "call_id": "e3e70682-c209-4cac-629f-6fbed82c07cd:1",
                     "entity": {
                         "type": "User",
                         "value": {

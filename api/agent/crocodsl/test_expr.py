@@ -8,7 +8,7 @@ from .func import *
 class TestExpr(unittest.TestCase):
     def test_parse_literal(self):
         """Test parsing into simple values."""
-        assert parse("None")() == None
+        assert parse("None")() is None
         assert parse("1")() == 1
         assert parse("1234")() == 1234
         assert parse("1.2")() == 1.2
@@ -50,10 +50,10 @@ class TestExpr(unittest.TestCase):
 
     def test_parse_field(self):
         """Test parsing field attributes."""
-        assert parse("$id")(None) == None
-        assert parse("$id")({}) == None
+        assert parse("$id")(None) is None
+        assert parse("$id")({}) is None
         assert parse("$id")({"id": 123}) == 123
-        assert parse("$id")({"foo": 123}) == None
+        assert parse("$id")({"foo": 123}) is None
         assert parse("[1, 2, $id]")({"id": 3}) == [1, 2, 3]
 
     def test_nested_field(self):

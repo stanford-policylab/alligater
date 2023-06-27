@@ -1,17 +1,30 @@
 import atexit
 import hashlib
 import threading
-import time
 from functools import partial
 
 from .arm import Arm
 from .cache import AssignmentCache
-from .common import (LoadError, MissingFeatureError, NoAssignment, NoConfig,
-                     NoReload, SkipLog, ValidationError, encode_json,
-                     simple_object)
+from .common import (
+    LoadError,
+    MissingFeatureError,
+    NoAssignment,
+    NoConfig,
+    NoReload,
+    SkipLog,
+    ValidationError,
+    encode_json,
+    simple_object,
+)
 from .feature import Feature
-from .log import (DeferrableLogger, NetworkLogger, ObjectLogger, PrintLogger,
-                  default_logger, log)
+from .log import (
+    DeferrableLogger,
+    NetworkLogger,
+    ObjectLogger,
+    PrintLogger,
+    default_logger,
+    log,
+)
 from .parse import load_config, parse_yaml
 from .population import Population
 from .rand import seed
@@ -206,7 +219,7 @@ class Alligater:
                     raise NoConfig("No YAML path is specified; (re)loader is exiting.")
 
                 try:
-                    log.debug("🕵️‍♀️ Checking for new features ...")
+                    log.debug("🕵️‍♀️  Checking for new features ...")
                     yaml_str = load_config(self._yaml, **self._loader_kwargs)
                     new_sum = self._checksum(yaml_str)
                     if new_sum != self._old_sum:
@@ -223,7 +236,7 @@ class Alligater:
                             raise_exceptions=once,
                         )
                         self._old_sum = new_sum
-                        log.debug("☺️ Updated to {}!".format(new_sum))
+                        log.debug("☺️  Updated to {}!".format(new_sum))
                         if once:
                             return
                     else:
@@ -261,4 +274,12 @@ __all__ = [
     "log",
     "encode_json",
     "simple_object",
+    "DeferrableLogger",
+    "NetworkLogger",
+    "ObjectLogger",
+    "PrintLogger",
+    "NoAssignment",
+    "SkipLog",
+    "CallType",
+    "Value",
 ]

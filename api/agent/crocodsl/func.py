@@ -76,7 +76,7 @@ class _Expression(metaclass=_MetaExpression):
 
         This must be implemented in a subclass."""
 
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def equivalent(self, other):
         """Check whether two expressions are equivalent.
@@ -215,7 +215,7 @@ class _NAryExpression(_Expression):
         return f"{op}({', '.join(args)})"
 
 
-## Operator definitions
+# Operator definitions
 #
 # These are all the operators available to expressions.
 

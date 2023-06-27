@@ -1,5 +1,5 @@
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Optional, Protocol, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 if TYPE_CHECKING:
     from .feature import Feature

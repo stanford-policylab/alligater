@@ -1,6 +1,5 @@
 import asyncio
-from typing import (TYPE_CHECKING, Any, Awaitable, Callable, Optional, Union,
-                    cast)
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Union, cast
 
 import alligater.events as events
 
@@ -237,9 +236,11 @@ class Feature:
                 if has_assignment:
                     events.LeaveFeature(log, value=value, call_id=call_id)
                     events.LeaveGate(log, value=value, call_id=call_id)
-                    return Value(value, call_id, CallType.EXPOSURE, log=log)
+                    return Value(  # noqa: B012
+                        value, call_id, CallType.EXPOSURE, log=log
+                    )
 
-        for i, r in enumerate(self.rollouts):
+        for r in self.rollouts:
             variant_name = r(cast(str, call_id), entity, log=log)
             if variant_name:
                 variant = self.variants[variant_name]
@@ -251,7 +252,10 @@ class Feature:
                 is_sticky_assignment = bool(sticky) if r.sticky is None else r.sticky
                 if is_sticky_assignment and not sticky:
                     iolog.warning(
-                        f"🏒 Rollout {r.name} requests a persistent (sticky) assignment, but no sticky assignment fetcher was passed into Alligater. This means assignments are probably being written but never read, which seems like an error in your code!"
+                        f"🏒 Rollout {r.name} requests a persistent (sticky) assignment, "
+                        "but no sticky assignment fetcher was passed into Alligater. "
+                        "This means assignments are probably being written but never read, "
+                        "which seems like an error in your code!"
                     )
 
                 events.ChoseVariant(

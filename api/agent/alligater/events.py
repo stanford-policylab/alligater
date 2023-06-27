@@ -100,7 +100,7 @@ class _Event:
         return self.name
 
 
-## Event definitions.
+# Event definitions.
 #
 # The following events can be used for building Logging modules to report
 # decisions made by the feature gater.

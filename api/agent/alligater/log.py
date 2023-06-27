@@ -3,26 +3,26 @@ import atexit
 import copy
 import logging
 import signal
-import sys
 import threading
-import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-import alligater.events as events
 import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.packages.urllib3.util.retry import Retry
 
-from .common import SkipLog, encode_json, get_uuid, simple_object
+import alligater.events as events
+
+from .common import SkipLog, encode_json, seq_id, simple_object
 
 # Sys log (different than feature trace log)
 log = logging.getLogger("nudge.alligater")
 
 
-default_now = lambda: datetime.now(timezone.utc)
-"""Default `now` implementation."""
+def default_now():
+    """Default `now` implementation."""
+    return datetime.now(timezone.utc)
 
 
 class DeferrableLogger(events.EventLogger):
@@ -152,7 +152,7 @@ class ObjectLogger(DeferrableLogger):
             data = copy.deepcopy(self._cache[call_id])
             # If this event has been sent before, generate a new ID for it.
             if data["repeat"]:
-                data["call_id"] = get_uuid()
+                data["call_id"] = seq_id(data["call_id"])
 
             # Add extra data if it's given during this call.
             if extra:
@@ -343,7 +343,7 @@ class NetworkLogger(ObjectLogger):
         if not self._debug:
             return
 
-        log.debug("🪵 " + args[0].format(*args[1:]))
+        log.debug("🪵  " + args[0].format(*args[1:]))
 
 
 class PrintLogger(events.EventLogger):

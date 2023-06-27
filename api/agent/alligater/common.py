@@ -21,6 +21,27 @@ def get_uuid() -> str:
     return str(uuid.UUID(int=getrandbits(128)))
 
 
+def seq_id(current_id: str) -> str:
+    """Get a sequential ID based on the current ID.
+
+    This breaks the UUID formatting, but has two advantages:
+      - Keeps the provenance of the original event from which
+        this event was derived.
+      - Can help avoid non-determinism in tests.
+    provenance of events based on an original ID.
+
+    Args:
+        current_id - Base ID
+
+    Returns:
+        Unique ID based on the current ID.
+    """
+    base_id, _, seq = current_id.partition(":")
+    if seq:
+        return f"{base_id}:{int(seq) + 1}"
+    return f"{base_id}:1"
+
+
 def is_non_string_iterable(c: Any) -> bool:
     """Check if this is a collection (but not a string).
 

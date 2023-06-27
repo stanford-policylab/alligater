@@ -73,7 +73,7 @@ def _expand_population(population):
         the string `default` can also be used as shorthand.
 
     Raises:
-        NotImplemented if an unsupported population specification is provided.
+        NotImplementedError if an unsupported population specification is provided.
     """
     if not population:
         return None
@@ -100,7 +100,7 @@ def _expand_population(population):
 
         return Population.Explicit(population["value"], **kwargs)
     else:
-        raise NotImplemented("Unknown population type {}".format(t))
+        raise NotImplementedError("Unknown population type {}".format(t))
 
 
 def _expand_arms(arms):

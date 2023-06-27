@@ -23,7 +23,7 @@ class _Field(_Expression):
         return ".".join([f"${name}" for name in self.names])
 
 
-## Field definitions
+# Field definitions
 #
 # These are predefined values that describe how to interpret an arbitrary
 # entity in an Expression.
