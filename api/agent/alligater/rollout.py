@@ -1,4 +1,4 @@
-from typing import Any, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Union, cast
 
 import alligater.events as events
 import crocodsl.field as field
@@ -7,6 +7,9 @@ import crocodsl.func as func
 from .arm import Arm
 from .common import ValidationError
 from .population import Population, PopulationSelector
+
+if TYPE_CHECKING:
+    from . import Alligater
 
 
 class Rollout:
@@ -225,11 +228,12 @@ class Rollout:
             "sticky": self.sticky,
         }
 
-    def __call__(
+    async def __call__(
         self,
         call_id: str,
         entity: dict,
         log: Optional[events.EventLogger] = None,
+        gater: Optional["Alligater"] = None,
     ) -> Optional[str]:
         """Apply this rollout to the given entity.
 
@@ -241,7 +245,7 @@ class Rollout:
         """
         events.EnterRollout(log, rollout=self, call_id=call_id)
 
-        if not self.population(call_id, entity, log=log):
+        if not await self.population(call_id, entity, log=log, gater=gater):
             events.LeaveRollout(log, member=False, call_id=call_id)
             return None
 

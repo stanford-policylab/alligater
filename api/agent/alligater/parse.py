@@ -92,6 +92,9 @@ def _expand_population(population):
     elif t == "expression":
         expr = _expand_expression(population["value"])
         return Population.Expression(expr)
+    elif t == "feature":
+        expr = _expand_expression(population["where"])
+        return Population.Feature(population["name"], expr)
     elif t == "explicit":
         kwargs = {}
 

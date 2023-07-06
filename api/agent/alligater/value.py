@@ -31,11 +31,13 @@ class Value(Generic[T]):
     def __init__(
         self,
         value: T,
+        variant: str,
         call_id: Optional[str] = None,
         call_type: CallType = CallType.ASSIGNMENT,
         log: Optional[EventLogger] = None,
     ):
         self._value = value
+        self._variant = variant
         self._call_id = call_id
         self._call_type = call_type
         self._log = log
@@ -49,6 +51,11 @@ class Value(Generic[T]):
     def value(self) -> T:
         """Unwrap the internal value."""
         return self._value
+
+    @property
+    def variant(self) -> str:
+        """Get the variant name."""
+        return self._variant
 
     @property
     def call_type(self) -> CallType:

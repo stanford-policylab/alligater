@@ -198,6 +198,67 @@ feature:
             assert await gater.another_feature({}) == "new feature"
             gater.stop()
 
+    async def test_cross_ref_features(self):
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.write(
+                b"""
+feature:
+  name: ft1
+  variants:
+    var1: a
+    var2: b
+  rollouts:
+    - name: segment1
+      arms: [var2]
+      population:
+        type: explicit
+        value: [id_2]
+  default_arm: var1
+
+---
+
+feature:
+  name: ft2
+  variants:
+    varX: x
+    varY: y
+  default_arm: varX
+  rollouts:
+    - name: segmentZ
+      arms: [varY]
+      population:
+        type: feature
+        name: ft1
+        where: $value Eq 'b'
+
+---
+
+feature:
+  name: ft3
+  variants:
+    varI: i
+    varJ: j
+  default_arm: varI
+  rollouts:
+    - name: segmentK
+      arms: [varJ]
+      population:
+        type: feature
+        name: ft1
+        where: $variant Eq 'var2'
+"""
+            )
+            tf.flush()
+
+            gater = Alligater(yaml=tf.name, reload_interval=1)
+            assert await gater.ft1({"id": "id_1"}) == "a"
+            assert await gater.ft1({"id": "id_2"}) == "b"
+            assert await gater.ft2({"id": "id_1"}) == "x"
+            assert await gater.ft2({"id": "id_2"}) == "y"
+            assert await gater.ft3({"id": "id_1"}) == "i"
+            assert await gater.ft3({"id": "id_2"}) == "j"
+            gater.stop()
+
     @responses.activate
     def test_yaml_remote_config(self):
         """Test with loading remote config."""

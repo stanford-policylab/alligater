@@ -1,11 +1,14 @@
 import abc
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import alligater.events as events
 import crocodsl.field as field
 import crocodsl.func as func
 
 from .common import ValidationError
+
+if TYPE_CHECKING:
+    from . import Alligater
 
 
 class PopulationSelector(abc.ABC):
@@ -14,8 +17,12 @@ class PopulationSelector(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def __call__(
-        self, call_id: str, entity: Any, log: Optional[events.EventLogger]
+    async def __call__(
+        self,
+        call_id: str,
+        entity: Any,
+        log: Optional[events.EventLogger],
+        gater: Optional["Alligater"],
     ) -> bool:
         ...
 
@@ -31,7 +38,7 @@ class DefaultSelector(PopulationSelector):
         """Ensures configuration is correct. (It is.)"""
         pass
 
-    def __call__(self, call_id, entity, log=None):
+    async def __call__(self, call_id, entity, log=None, gater=None):
         """Returns True -- everyone is in the default population!
 
         Args:
@@ -81,7 +88,7 @@ class ExpressionSelector(PopulationSelector):
         """
         self.expression.validate()
 
-    def __call__(self, call_id, entity, log=None):
+    async def __call__(self, call_id, entity, log=None, gater=None):
         """Check whether entity belongs to a this population.
 
         Args:
@@ -116,6 +123,41 @@ class ExpressionSelector(PopulationSelector):
             "name": "Expression",
             "expression": str(self.expression),
         }
+
+
+class FeatureSelector(ExpressionSelector):
+    """Select a population based on a feature of the entity."""
+
+    def __init__(self, feature, expr):
+        """Select a population based on another feature.
+
+        Args:
+            feature - Feature to delegate to
+            expr - Expression on feature evaluation. $variant and $value are
+            variables availalbe for conditioning.
+        """
+        self.feature = feature
+        super().__init__(expr)
+
+    async def __call__(self, call_id, entity, log=None, gater=None):
+        """Check whether entity belongs to a this population.
+
+        Args:
+            call_id - ID of the exposure evaluation call
+            entity - The entity to test
+
+        Returns:
+            True or False indicating membership in this population.
+        """
+        # NOTE: only assignments get logged from this sub-evaluation, never
+        # any exposures. In theory the parent exposure should be logged in
+        # lieu of the child.
+        value = await getattr(gater, self.feature)(entity, deferred=True)
+        result_entity = {
+            "value": value.value,
+            "variant": value.variant,
+        }
+        return await super().__call__(call_id, result_entity, log=log, gater=gater)
 
 
 class PercentSelector(ExpressionSelector):
@@ -168,4 +210,5 @@ class Population:
     DEFAULT = DefaultSelector()
     Percent = PercentSelector
     Expression = ExpressionSelector
+    Feature = FeatureSelector
     Explicit = ExplicitSelector

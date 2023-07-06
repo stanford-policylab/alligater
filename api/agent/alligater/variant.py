@@ -1,10 +1,14 @@
 import asyncio
+from typing import TYPE_CHECKING, Optional
 
 import alligater.events as events
 
 from .common import ValidationError
 from .feature import Feature
 from .value import Value
+
+if TYPE_CHECKING:
+    from . import Alligater
 
 
 class Variant:
@@ -83,7 +87,9 @@ class Variant:
             "nested": self.is_nested,
         }
 
-    async def __call__(self, call_id, entity, log=None):
+    async def __call__(
+        self, call_id, entity, log=None, gater: Optional["Alligater"] = None
+    ):
         """Get the value for this variant.
 
         If the value is a Feature (or a `functor`), it will be called with
@@ -103,9 +109,11 @@ class Variant:
 
             result = None
             if asyncio.iscoroutinefunction(self._value):
-                result = await self._value(entity, log=log, call_id=call_id)
+                result = await self._value(
+                    entity, log=log, call_id=call_id, gater=gater
+                )
             else:
-                result = self._value(entity, log=log, call_id=call_id)
+                result = self._value(entity, log=log, call_id=call_id, gater=gater)
 
             # Unwrap wrapped Values. This happens when features are nested in
             # variants. Only the final value will be wrapped.

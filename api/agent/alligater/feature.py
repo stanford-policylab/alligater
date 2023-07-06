@@ -11,6 +11,7 @@ from .rollout import Rollout
 from .value import CallType, Value
 
 if TYPE_CHECKING:
+    from . import Alligater
     from .cache import AssignmentCache
     from .variant import Variant
 
@@ -158,6 +159,7 @@ class Feature:
         call_id: Optional[str] = None,
         sticky: Optional[AssignmentFetcher] = None,
         assignment_cache: Optional["AssignmentCache"] = None,
+        gater: Optional["Alligater"] = None,
     ) -> Value[Any]:
         """Apply the gate to the given entity.
 
@@ -172,6 +174,7 @@ class Feature:
         Internal Args:
             call_id - the ID of the feature invocation that this call is
                       nested within. This is None if the call is not nested.
+            gater - the Alligater instance
 
         Returns:
             Variant that the entity should receive and the CallID.
@@ -237,11 +240,11 @@ class Feature:
                     events.LeaveFeature(log, value=value, call_id=call_id)
                     events.LeaveGate(log, value=value, call_id=call_id)
                     return Value(  # noqa: B012
-                        value, call_id, CallType.EXPOSURE, log=log
+                        value, variant_name or "", call_id, CallType.EXPOSURE, log=log
                     )
 
         for r in self.rollouts:
-            variant_name = r(cast(str, call_id), entity, log=log)
+            variant_name = await r(cast(str, call_id), entity, log=log, gater=gater)
             if variant_name:
                 variant = self.variants[variant_name]
 
@@ -261,7 +264,7 @@ class Feature:
                 events.ChoseVariant(
                     log, variant=variant, sticky=is_sticky_assignment, call_id=call_id
                 )
-                value = await variant(call_id, entity, log=log)
+                value = await variant(call_id, entity, log=log, gater=gater)
 
                 events.LeaveFeature(log, value=value, call_id=call_id)
                 if not nested:
@@ -269,7 +272,7 @@ class Feature:
 
                 if assignment_cache:
                     assignment_cache.set(self, entity, variant_name, value)
-                return Value(value, call_id, CallType.ASSIGNMENT, log=log)
+                return Value(value, variant_name, call_id, CallType.ASSIGNMENT, log=log)
 
         # This code is probably unreachable since there has to be a default
         # rollout to fall back on. But the feature definitions can be quite

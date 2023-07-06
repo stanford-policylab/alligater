@@ -154,6 +154,7 @@ class Alligater:
             log=logger,
             sticky=self._sticky,
             assignment_cache=self._local_assignments,
+            gater=self,
         )
         # Note that Logger implementations that aren't DeferrableLoggers
         # log immediately and calling `log` is just a no-op.
