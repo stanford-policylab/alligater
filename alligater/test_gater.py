@@ -75,12 +75,14 @@ class TestGater(unittest.IsolatedAsyncioTestCase):
         )
         v = await gater.foo({"id": 1}, deferred=True)
         assert v == "Foo"
-        logger.mock.write_log.has_calls([call("e3e70682-c209-4cac-629f-6fbed82c07cd")])
+        logger.mock.write_log.assert_has_calls(
+            [call("e3e70682-c209-4cac-629f-6fbed82c07cd", extra=None)]
+        )
         assert logger.mock.write_log.call_count == 1
         logger.mock.drop_log.assert_not_called()
         v.log()
-        logger.mock.write_log.has_calls(
-            [call("e3e70682-c209-4cac-629f-6fbed82c07cd")] * 2
+        logger.mock.write_log.assert_has_calls(
+            [call("e3e70682-c209-4cac-629f-6fbed82c07cd", extra=None)] * 2
         )
         logger.mock.drop_log.assert_not_called()
 
