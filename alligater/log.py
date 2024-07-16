@@ -17,7 +17,7 @@ import alligater.events as events
 from .common import SkipLog, encode_json, seq_id, simple_object
 
 # Sys log (different than feature trace log)
-log = logging.getLogger("nudge.alligater")
+log = logging.getLogger("alligater")
 
 
 def default_now():

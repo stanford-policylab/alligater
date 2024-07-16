@@ -262,7 +262,7 @@ feature:
     @responses.activate
     def test_yaml_remote_config(self):
         """Test with loading remote config."""
-        url = "https://policylab.stanford.edu/nudge/config.yaml"
+        url = "https://policylab.hks.harvard.edu/alligater/config.yaml"
         responses.add(
             responses.GET,
             url,
