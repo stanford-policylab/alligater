@@ -865,8 +865,34 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
         }
 
     @responses.activate
-    def test_log_format(self):
+    def test_log_retry(self):
         responses.add(responses.POST, mock_url, status=500)
+        responses.add(responses.POST, mock_url, status=500)
+        responses.add(responses.POST, mock_url, json={"data": {"id": "mockuid"}})
+        logger = NetworkLogger(
+            mock_url,
+            headers={"Authorization": "Bearer glen"},
+            now=mock_now,
+            body=lambda x: {"custom": "foo"},
+            debug=True,
+        )
+
+        f = Feature(
+            "test_feature",
+            variants=[Variant("foo", "Foo")],
+            default_arm="foo",
+        )
+
+        v = asyncio.run(f(User("one"), log=logger))
+        v.log()
+
+        wait_for_responses(logger)
+
+        assert len(responses.calls) == 3
+        assert responses.calls[0].request.body == '{"custom": "foo"}'
+
+    @responses.activate
+    def test_log_format(self):
         responses.add(responses.POST, mock_url, json={"data": {"id": "mockuid"}})
 
         logger = NetworkLogger(
