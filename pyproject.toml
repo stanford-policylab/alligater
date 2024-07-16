@@ -1,9 +1,13 @@
 [tool.poetry]
 name = "alligater"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Joe Nudell <jnudell@hks.harvard.edu>"]
 readme = "README.md"
+packages = [
+    { include = "alligater" },
+    { include = "crocodsl" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
