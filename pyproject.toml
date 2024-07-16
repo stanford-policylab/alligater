@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "alligater"
+version = "0.1.0"
+description = ""
+authors = ["Joe Nudell <jnudell@hks.harvard.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+mmh3 = "^4.1.0"
+antlr4-python3-runtime = "^4.13.1"
+requests = "^2.32.3"
+pyyaml = "^6.0.1"
+urllib3 = "^2.2.2"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+responses = "^0.25.3"
+pre-commit = "^3.7.1"
+types-requests = "^2.32.0.20240712"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
