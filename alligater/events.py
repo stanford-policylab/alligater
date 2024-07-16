@@ -64,7 +64,7 @@ class _EventInstance:
         for k, v in self.args.items():
             vd = simple_object(v)
 
-            if type(vd) == dict and "name" in vd:
+            if isinstance(vd, dict) and "name" in vd:
                 vd = vd["name"]
             elif exclude and k in exclude and exclude[k] == vd:
                 continue

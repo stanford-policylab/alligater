@@ -83,7 +83,7 @@ class Feature:
         if default_arm:
             real_default_arm = (
                 Arm(default_arm, weight=1.0)
-                if type(default_arm) is str
+                if isinstance(default_arm, str)
                 else cast(Arm, default_arm)
             )
 

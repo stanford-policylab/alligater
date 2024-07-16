@@ -13,8 +13,7 @@ if TYPE_CHECKING:
 
 class PopulationSelector(abc.ABC):
     @abc.abstractmethod
-    def validate(self):
-        ...
+    def validate(self): ...
 
     @abc.abstractmethod
     async def __call__(
@@ -23,12 +22,10 @@ class PopulationSelector(abc.ABC):
         entity: Any,
         log: Optional[events.EventLogger],
         gater: Optional["Alligater"],
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
     @abc.abstractmethod
-    def to_dict(self) -> dict:
-        ...
+    def to_dict(self) -> dict: ...
 
 
 class DefaultSelector(PopulationSelector):

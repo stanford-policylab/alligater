@@ -74,7 +74,7 @@ class Rollout:
         if population is None:
             return Population.DEFAULT
 
-        if type(population) is str:
+        if isinstance(population, str):
             if population.lower() == "default":
                 return Population.DEFAULT
             raise ValueError("Invalid population name {}".format(population))
@@ -116,9 +116,9 @@ class Rollout:
         temp_result: list[Optional[Arm]] = [None] * len(arms)
 
         for i, arm in enumerate(arms):
-            if type(arm) is str:
+            if isinstance(arm, str):
                 temp_result[i] = Arm(arm)
-            elif type(arm) is Arm:
+            elif isinstance(arm, Arm):
                 temp_result[i] = arm
                 weight = arm.weight
                 if weight is not None:
@@ -151,7 +151,7 @@ class Rollout:
         Returns:
             A randomization function
         """
-        if type(randomizer) is str:
+        if isinstance(randomizer, str):
             if randomizer == self.DEFAULT_RANDOMIZER:
                 return func.Hash(func.Concat(self.name, ":", field.ID))
             raise ValueError(f"Unknown randomizer {randomizer}")

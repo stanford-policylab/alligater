@@ -77,7 +77,7 @@ class Alligater:
         """
         log.info("🐊 Loading alligater ...")
 
-        if type(features) is list:
+        if isinstance(features, list):
             features = {f.name: f for f in features}
 
         # Trace/event logging function

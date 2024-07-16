@@ -30,13 +30,13 @@ def _expand_variants(variants):
     """
     result = []
 
-    if type(variants) is dict:
+    if isinstance(variants, dict):
         variants = [{"name": k, "value": v} for k, v in variants.items()]
 
-    if type(variants) is list:
+    if isinstance(variants, list):
         for v in variants:
             value = v["value"]
-            if type(value) is dict and "feature" in value and len(value) == 1:
+            if isinstance(value, dict) and "feature" in value and len(value) == 1:
                 # If the value is a nested feature, recurse
                 args = _expand_feature(value["feature"])
                 value = Feature(**args)
@@ -78,7 +78,7 @@ def _expand_population(population):
     if not population:
         return None
 
-    if type(population) is str:
+    if isinstance(population, str):
         return population
 
     t = population["type"].lower()
@@ -122,7 +122,7 @@ def _expand_arms(arms):
     result = [None] * len(arms)
 
     for i, arm in enumerate(arms):
-        if type(arm) is dict:
+        if isinstance(arm, dict):
             args = {}
 
             if "variant" in arm:
@@ -135,7 +135,7 @@ def _expand_arms(arms):
                 args["weight"] = arm["weight"]
 
             result[i] = Arm(**args)
-        elif type(arm) is str:
+        elif isinstance(arm, str):
             result[i] = arm
         else:
             raise ValueError("Unexpected type of arm: {}".format(type(arm)))
