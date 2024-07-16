@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "alligater"
-version = "0.1.1"
-description = ""
+version = "0.1.2"
+description = "Randomization and gating library for Python."
 authors = ["Joe Nudell <jnudell@hks.harvard.edu>"]
 readme = "README.md"
 packages = [
@@ -10,12 +10,12 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-mmh3 = "^4.1.0"
-antlr4-python3-runtime = "^4.13.1"
-requests = "^2.32.3"
-pyyaml = "^6.0.1"
-urllib3 = "^2.2.2"
+python = "^3.10"
+mmh3 = "^4.1"
+antlr4-python3-runtime = "^4.13"
+requests = "^2.32"
+pyyaml = "^6.0"
+urllib3 = "^2.2"
 
 
 [tool.poetry.group.dev.dependencies]
