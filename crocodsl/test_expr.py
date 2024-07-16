@@ -2,7 +2,7 @@ import unittest
 
 from .expr import parse
 from .field import _Field
-from .func import *
+from .func import Concat, Hash, In, Literal, Ge, Gt, Le, Lt, Eq, Not, Or, And, Ne
 
 
 class TestExpr(unittest.TestCase):
