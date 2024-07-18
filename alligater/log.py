@@ -50,7 +50,9 @@ class DeferrableLogger(events.EventLogger):
 class ObjectLogger(DeferrableLogger):
     """Logger that aggregates event data as an object."""
 
-    def __init__(self, write, trace=False, now=default_now, workers=1):
+    def __init__(
+        self, write, trace=False, now=default_now, workers=1, install_signals=True
+    ):
         """Create a new ObjectLogger with the given `write` callback.
 
         Args:
@@ -58,6 +60,9 @@ class ObjectLogger(DeferrableLogger):
             trace - Whether to enable trace logging
             now - Function to get current datetime
             workers - Number of background workers to handle IO
+            install_signals - Whether to install signal handlers for cleanup.
+                If you are running in an environment like uvicorn, there may be
+                conflicts with signal handlers.
         """
         self._now = now
         self._cv = threading.Condition()
@@ -77,9 +82,10 @@ class ObjectLogger(DeferrableLogger):
 
         # Cleanup threads and try to drain the queue if possible when exiting.
         atexit.register(self._drain)
-        sigs = [signal.SIGINT, signal.SIGTERM]
-        for sig in sigs:
-            signal.signal(sig, self._drain)
+        if install_signals:
+            sigs = [signal.SIGINT, signal.SIGTERM]
+            for sig in sigs:
+                signal.signal(sig, self._drain)
 
     def stop(self):
         """Shut off the logger and send any pending messages."""
@@ -181,7 +187,6 @@ class ObjectLogger(DeferrableLogger):
             with self._cv:
                 self._stopped = True
                 self._cv.notify_all()
-
             [w.join() for w in self._workers]
             self._workers = []
 
