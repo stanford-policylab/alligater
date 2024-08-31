@@ -4,8 +4,8 @@ from typing import Any
 
 import mmh3
 
-# Maximum value it's possible to represent as a 64-bit double.
-MAX_DOUBLE = float(0xFFFFFFFFFFFFFFFF)
+# Maximum value it's possible to represent as a 64-bit unsigned int, as a float.
+MAX_UINT64_F = float(0xFFFFFFFFFFFFFFFF)
 
 
 def filter_kwargs(f, kwargs):
@@ -132,4 +132,4 @@ def hash_id(s: str) -> float:
     # uniformly distributed and should divide faster. Technique taken from
     # this blog post:
     # https://www.rolando.cl/blog/2018/12/how_uniform_is_md5.html
-    return mmh3.hash64(s, signed=False)[0] / MAX_DOUBLE
+    return mmh3.hash64(s, signed=False)[0] / MAX_UINT64_F
