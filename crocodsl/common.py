@@ -1,6 +1,7 @@
 import inspect
 import sys
 from typing import Any
+from datetime import datetime, UTC
 
 import mmh3
 
@@ -133,3 +134,12 @@ def hash_id(s: str) -> float:
     # this blog post:
     # https://www.rolando.cl/blog/2018/12/how_uniform_is_md5.html
     return mmh3.hash64(s, signed=False)[0] / MAX_UINT64_F
+
+
+def utcnow() -> datetime:
+    """Get current timestamp as UTC.
+
+    Returns:
+        Timezone-aware UTC timestamp.
+    """
+    return datetime.utcnow().replace(tzinfo=UTC)
