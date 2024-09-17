@@ -3,6 +3,7 @@ import tempfile
 import time
 import unittest
 from unittest.mock import Mock, call
+from datetime import datetime, UTC
 
 import responses
 
@@ -51,18 +52,24 @@ class TestGater(unittest.IsolatedAsyncioTestCase):
             default_arm="foo",
         )
 
-        gater = Alligater(features=[foo], sticky=_sticky)
-        gater._local_assignments.set(foo, {"id": "a"}, "bar", "Bar")
+        mock_ts = datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC)
+        mock_ts2 = datetime(2024, 1, 2, 3, 4, 6, tzinfo=UTC)
+        gater = Alligater(features=[foo], sticky=_sticky, now=lambda: mock_ts2)
+        gater._local_assignments.set(foo, {"id": "a"}, "bar", "Bar", mock_ts)
         assert await gater.foo({"id": "a"}) == "Bar"
         assert await gater.foo({"id": "b"}) == "Foo"
-        assert gater._local_assignments.get(foo, {"id": "b"}) == ("foo", "Foo")
+        assert gater._local_assignments.get(foo, {"id": "b"}) == (
+            "foo",
+            "Foo",
+            mock_ts2,
+        )
         gater._local_assignments.clear()
         assert await gater.foo({"id": "a"}) == "Foo"
 
     async def test_deferred_exposure_logging(self):
         def _sticky(feature, entity):
             if entity["id"] == 2:
-                return "bar", "Bar"
+                return "bar", "Bar", datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC)
             raise NoAssignment
 
         logger = MockDeferredLogger()
@@ -99,7 +106,11 @@ class TestGater(unittest.IsolatedAsyncioTestCase):
     async def test_drop_deferred_logging(self):
         logger = MockDeferredLogger()
         gater = Alligater(
-            sticky=lambda x, y: ("foo", "Foo"),
+            sticky=lambda x, y: (
+                "foo",
+                "Foo",
+                datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC),
+            ),
             logger=logger,
             features=[
                 Feature("foo", variants=[Variant("foo", "Foo")], default_arm="foo"),

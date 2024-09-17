@@ -1,5 +1,6 @@
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Optional, Tuple
+from datetime import datetime
 
 if TYPE_CHECKING:
     from .feature import Feature
@@ -8,8 +9,8 @@ if TYPE_CHECKING:
 EntityId = Tuple[str, str]
 """Composite ID of an entity: class name and ID attribute."""
 
-CachedAssignment = Tuple[str, Any]
-"""Cached variant name and value."""
+CachedAssignment = Tuple[str, Any, datetime]
+"""Cached variant name and value and assignment time."""
 
 AssignmentsCache = dict[str, dict[EntityId, CachedAssignment]]
 """Dictionary containing assignments."""
@@ -51,7 +52,9 @@ class AssignmentCache:
         with self.lock:
             self.cache.clear()
 
-    def set(self, feature: "Feature", entity: Any, variant: str, value: Any):
+    def set(
+        self, feature: "Feature", entity: Any, variant: str, value: Any, ts: datetime
+    ):
         """Add a new item to the cache.
 
         Args:
@@ -59,11 +62,12 @@ class AssignmentCache:
             entity - Entity to look up
             variant - Name of variant to set
             value - Value of the variant to set
+            ts - Timestamp of the assignment
         """
         with self.lock:
             if feature.name not in self.cache:
                 self.cache[feature.name] = {}
-            self.cache[feature.name][_entity_id(entity)] = (variant, value)
+            self.cache[feature.name][_entity_id(entity)] = (variant, value, ts)
 
     def get(self, feature: "Feature", entity: Any) -> Optional[CachedAssignment]:
         """Look up cached assignment.
@@ -73,7 +77,7 @@ class AssignmentCache:
             entity - Entity to look up
 
         Returns:
-            Tuple of cached variant name and value, if it exists, or N
+            Tuple of cached variant name and value and ts, if it exists, or N
         """
         with self.lock:
             return self.cache.get(feature.name, {}).get(_entity_id(entity), None)

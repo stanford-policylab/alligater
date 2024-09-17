@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 import alligater.events as events
 
-from .common import ValidationError
+from .common import ValidationError, NowFn, default_now
 from .feature import Feature
 from .value import Value
 
@@ -88,7 +88,12 @@ class Variant:
         }
 
     async def __call__(
-        self, call_id, entity, log=None, gater: Optional["Alligater"] = None
+        self,
+        call_id,
+        entity,
+        log=None,
+        gater: Optional["Alligater"] = None,
+        now: NowFn = default_now,
     ):
         """Get the value for this variant.
 
@@ -102,25 +107,29 @@ class Variant:
         Returns:
             Could be anything.
         """
-        events.EnterVariant(log, variant=self, call_id=call_id)
+        events.EnterVariant(log, variant=self, call_id=call_id, now=now)
 
         if self.is_nested:
-            events.VariantRecurse(log, inner=self._value, call_id=call_id)
+            events.VariantRecurse(log, inner=self._value, call_id=call_id, now=now)
 
             result = None
             if asyncio.iscoroutinefunction(self._value):
                 result = await self._value(
-                    entity, log=log, call_id=call_id, gater=gater
+                    entity, log=log, call_id=call_id, gater=gater, now=now
                 )
             else:
-                result = self._value(entity, log=log, call_id=call_id, gater=gater)
+                result = self._value(
+                    entity, log=log, call_id=call_id, gater=gater, now=now
+                )
 
             # Unwrap wrapped Values. This happens when features are nested in
             # variants. Only the final value will be wrapped.
+            # TODO(jnu): this loses the assignment TS. Unclear if that's expected behavior,
+            # but it's something to keep in mind.
             if isinstance(result, Value):
                 return result.value
             else:
                 return result
 
-        events.LeaveVariant(log, value=self._value, call_id=call_id)
+        events.LeaveVariant(log, value=self._value, call_id=call_id, now=now)
         return self._value

@@ -82,7 +82,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
         )
 
         write = MockWriter()
-        v = await f(User("one"), log=ObjectLogger(write, now=mock_now))
+        v = await f(User("one"), log=ObjectLogger(write), now=mock_now)
 
         write.assertNotWritten()
 
@@ -162,7 +162,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
         )
 
         write = MockWriter()
-        v = await f(User("two"), log=ObjectLogger(write, now=mock_now, trace=True))
+        v = await f(User("two"), log=ObjectLogger(write, trace=True), now=mock_now)
         v.log()
 
         write.assertWritten(
@@ -288,11 +288,13 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
             default_arm="foo",
         )
 
+        mock_assign_ts = datetime(2022, 1, 29, 12, 11, 11, 0, tzinfo=timezone.utc)
         write = MockWriter()
         v = await f(
             User("two"),
-            sticky=lambda f, e: ("stickyvariant", "sticky"),
-            log=ObjectLogger(write, now=mock_now, trace=True),
+            sticky=lambda f, e: ("stickyvariant", "sticky", mock_assign_ts),
+            log=ObjectLogger(write, trace=True),
+            now=mock_now,
         )
         v.log()
 
@@ -376,7 +378,8 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
         v = await f(
             User("two"),
             sticky=sticker,
-            log=ObjectLogger(write, now=mock_now, trace=True),
+            log=ObjectLogger(write, trace=True),
+            now=mock_now,
         )
         v.log()
 
@@ -520,7 +523,7 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
 
         write = MockWriter()
 
-        v = await f(User("two"), log=ObjectLogger(write, now=mock_now, trace=True))
+        v = await f(User("two"), log=ObjectLogger(write, trace=True), now=mock_now)
         v.log()
 
         write.assertWritten(
@@ -662,7 +665,8 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
         v = await f(
             User("two"),
             sticky=sticker,
-            log=ObjectLogger(write, now=mock_now, trace=True),
+            log=ObjectLogger(write, trace=True),
+            now=mock_now,
         )
         v.log()
 
@@ -799,9 +803,9 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
         )
 
         logger = NetworkLogger(
-            mock_url, headers={"Authorization": "Bearer glen"}, now=mock_now, debug=True
+            mock_url, headers={"Authorization": "Bearer glen"}, debug=True
         )
-        v = asyncio.run(f(User("one"), log=logger))
+        v = asyncio.run(f(User("one"), log=logger, now=mock_now))
         v.log()
 
         wait_for_responses(logger)
@@ -872,7 +876,6 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
         logger = NetworkLogger(
             mock_url,
             headers={"Authorization": "Bearer glen"},
-            now=mock_now,
             body=lambda x: {"custom": "foo"},
             debug=True,
         )
@@ -883,7 +886,7 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
             default_arm="foo",
         )
 
-        v = asyncio.run(f(User("one"), log=logger))
+        v = asyncio.run(f(User("one"), log=logger, now=mock_now))
         v.log()
 
         wait_for_responses(logger)
@@ -898,7 +901,6 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
         logger = NetworkLogger(
             mock_url,
             headers={"Authorization": "Bearer glen"},
-            now=mock_now,
             body=lambda x: {"custom": "foo"},
             debug=True,
         )
@@ -909,7 +911,7 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
             default_arm="foo",
         )
 
-        v = asyncio.run(f(User("one"), log=logger))
+        v = asyncio.run(f(User("one"), log=logger, now=mock_now))
         v.log()
 
         wait_for_responses(logger)
@@ -925,7 +927,6 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
         logger = NetworkLogger(
             mock_url,
             headers={"Authorization": "Bearer glen"},
-            now=mock_now,
             body=skip_log,
             debug=True,
         )
@@ -936,7 +937,7 @@ class TestNetworkLogger(unittest.IsolatedAsyncioTestCase):
             default_arm="foo",
         )
 
-        v = asyncio.run(f(User("one"), log=logger))
+        v = asyncio.run(f(User("one"), log=logger, now=mock_now))
         v.log()
 
         wait_for_responses(logger, expected_count=0)

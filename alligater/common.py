@@ -3,9 +3,17 @@ import dataclasses
 import json
 import uuid
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Callable
 
+from crocodsl.common import utcnow
 from .rand import getrandbits
+
+
+NowFn = Callable[[], datetime]
+"""Function to get the current time."""
+
+default_now: NowFn = utcnow
+"""Default function to get the current time."""
 
 
 def get_uuid() -> str:

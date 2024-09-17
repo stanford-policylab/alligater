@@ -1,5 +1,6 @@
 import unittest
 from dataclasses import dataclass
+from datetime import datetime
 
 from crocodsl.field import _Field
 from crocodsl.func import Hash
@@ -27,7 +28,7 @@ class TestFeature(unittest.IsolatedAsyncioTestCase):
             default_arm="foo",
         )
 
-        # Everyone's a member, everyone gets the same ariant.
+        # Everyone's a member, everyone gets the same variant.
         assert await f(User("one")) == "Foo"
         assert await f(User("two")) == "Foo"
         assert await f(User("three")) == "Foo"
@@ -167,6 +168,7 @@ class TestFeature(unittest.IsolatedAsyncioTestCase):
 
     async def test_sticky(self):
         """Feature should respect sticky assignments."""
+        mock_sticky_now = datetime(2024, 1, 2, 3, 4, 5)
         f = Feature(
             name="custom_randomizer",
             variants=[
@@ -185,10 +187,10 @@ class TestFeature(unittest.IsolatedAsyncioTestCase):
         )
 
         def _sticky_b(feature, entity):
-            return "b", "B"
+            return "b", "B", mock_sticky_now
 
         def _sticky_none(feature, entity):
-            return None, None
+            return None, None, None
 
         def _sticky_no_assignment(feature, entity):
             raise NoAssignment

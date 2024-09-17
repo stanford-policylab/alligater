@@ -2,6 +2,7 @@ import atexit
 import hashlib
 import threading
 from functools import partial
+from typing import Optional
 
 from .arm import Arm
 from .cache import AssignmentCache
@@ -15,6 +16,8 @@ from .common import (
     ValidationError,
     encode_json,
     simple_object,
+    default_now,
+    NowFn,
 )
 from .feature import Feature
 from .log import (
@@ -58,6 +61,7 @@ class Alligater:
         reload_interval=0,
         sticky=None,
         loader_kwargs=None,
+        now: NowFn = default_now,
     ):
         """Create a new feature gater.
 
@@ -74,12 +78,15 @@ class Alligater:
             input entity. This will skip full evaluation.
             loader_kwargs - Arguments to pass to the config loader. See the
             method in `parse.py` for details.
+            now - Function to call to get the current time.
         """
         log.info("🐊 Loading alligater ...")
 
         if isinstance(features, list):
             features = {f.name: f for f in features}
 
+        # Current time
+        self._now = now
         # Trace/event logging function
         self._logger = logger
         # Mutex for shared access to features dict from reloader thread.
@@ -135,7 +142,9 @@ class Alligater:
         except KeyError as e:
             raise MissingFeatureError(feature_name) from e
 
-    async def __call__(self, feature, entity, silent=False, deferred=None):
+    async def __call__(
+        self, feature, entity, silent=False, deferred=None, now: Optional[NowFn] = None
+    ):
         """Evaluate an entity against the given feature.
 
         Args:
@@ -144,17 +153,20 @@ class Alligater:
             silent - Whether to suppress logging for this invocation
             deferred - Whether exposure logging should be deferred. Note that
             assignment logging can never be deferred.
+            now - Optional function to call to get the current time. (Overrides default.)
 
         Returns:
             Wrapped value of the variant to return.
         """
         logger = self._logger if not silent else None
+        now_func = now if now else self._now
         value = await feature(
             entity,
             log=logger,
             sticky=self._sticky,
             assignment_cache=self._local_assignments,
             gater=self,
+            now=now_func,
         )
         # Note that Logger implementations that aren't DeferrableLoggers
         # log immediately and calling `log` is just a no-op.

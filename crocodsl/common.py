@@ -142,4 +142,4 @@ def utcnow() -> datetime:
     Returns:
         Timezone-aware UTC timestamp.
     """
-    return datetime.utcnow().replace(tzinfo=UTC)
+    return datetime.now(UTC)
