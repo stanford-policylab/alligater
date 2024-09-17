@@ -439,6 +439,20 @@ class TimeSince(_BinaryExpression):
         TimeSince($my_prop, 'months')
     """
 
+    _CONVERSIONS = {
+        unit: conversion
+        for units, conversion in [
+            ({"s", "sec", "second", "seconds"}, 1.0),
+            ({"m", "min", "minute", "minutes"}, 60.0),
+            ({"h", "hr", "hour", "hours"}, 3_600.0),
+            ({"d", "day", "days"}, 86_400.0),
+            ({"w", "wk", "week", "weeks"}, 604_800.0),
+            ({"mo", "mon", "month", "months"}, 2_628_288.0),
+            ({"y", "yr", "year", "years"}, 31_536_000.0),
+        ]
+        for unit in units
+    }
+
     def __call__(self, *args, log=None, context=None):
         now_ts = Now()(*args, log=log, context=context)
         moment, unit = self.evaluate(*args, log=log, context=context)
@@ -451,7 +465,9 @@ class TimeSince(_BinaryExpression):
         return result
 
     def _convert(self, seconds, unit):
-        if unit != "seconds":
-            raise NotImplementedError("Only seconds are supported right now")
-        # TODO - unit conversions
-        return seconds
+        unit = unit.lower()
+        try:
+            conversion = self._CONVERSIONS[unit.lower()]
+            return seconds / conversion
+        except KeyError:
+            raise ValueError(f"Invalid unit '{unit}'")

@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, UTC
 
 from .expr import parse
 from .field import _Field
@@ -100,6 +101,15 @@ class TestExpr(unittest.TestCase):
         assert (
             parse("Hash(Concat($prefix, ':', $id))")({"prefix": "pfx", "id": "123"})
             == 0.07302924453117249
+        )
+
+        orig_ts = datetime(2020, 1, 1, 0, 0, 0, tzinfo=UTC)
+        now_ts = datetime(2020, 1, 3, 3, 0, 0, tzinfo=UTC)
+        assert parse("TimeSince($timestamp, 'd') Gt 2")(
+            {"timestamp": orig_ts}, context={"now": lambda: now_ts}
+        )
+        assert parse("TimeSince($timestamp, 'd') Lt 3")(
+            {"timestamp": orig_ts}, context={"now": lambda: now_ts}
         )
 
     def test_compose(self):

@@ -1,4 +1,5 @@
 import unittest
+from datetime import UTC, datetime
 
 import crocodsl.func as func
 
@@ -20,6 +21,8 @@ class TestFunc(unittest.TestCase):
         assert repr(func.Hash) == "Hash"
         assert repr(func.Len) == "Len"
         assert repr(func.Matches) == "Matches"
+        assert repr(func.Now) == "Now"
+        assert repr(func.TimeSince) == "TimeSince"
 
     def test_expr_repr(self):
         """Test the representations of expressions."""
@@ -203,6 +206,26 @@ class TestFunc(unittest.TestCase):
         assert func.Matches("foo", r"^f")() is True
         assert func.Matches("bar", r"^f")() is False
         assert func.Matches("a.b.c", r"\.b\.")() is True
+
+    def test_now(self):
+        """Test now function."""
+        ts = datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC)
+        assert func.Now()(context={"now": lambda: ts}) == ts
+
+    def test_time_since(self):
+        """Test time delta computation."""
+        orig_ts = datetime(2024, 1, 1, 3, 4, 5, tzinfo=UTC)
+        ts = datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC)
+        assert func.TimeSince(orig_ts, "seconds")(context={"now": lambda: ts}) == 86_400
+        assert func.TimeSince(orig_ts, "minutes")(context={"now": lambda: ts}) == 1_440
+        assert func.TimeSince(orig_ts, "hours")(context={"now": lambda: ts}) == 24
+        assert func.TimeSince(orig_ts, "d")(context={"now": lambda: ts}) == 1
+        assert func.TimeSince(orig_ts, "w")(context={"now": lambda: ts}) == 1 / 7
+        assert (
+            func.TimeSince(orig_ts, "mo")(context={"now": lambda: ts})
+            == 86_400 / 2_628_288
+        )
+        assert func.TimeSince(orig_ts, "y")(context={"now": lambda: ts}) == 1 / 365
 
     def test_composition(self):
         """Make sure functions can be composed."""
