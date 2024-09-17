@@ -1,7 +1,7 @@
 import re
 from collections.abc import Iterable, Sequence
 
-from .common import hash_id
+from .common import hash_id, utcnow
 
 
 class _MetaExpression(type):
@@ -134,6 +134,16 @@ class _ComposedExpression(_Expression):
         else:
             inners = ", ".join(all_reps)
         return f"{repr(self.outer)}({inners})"
+
+
+class _NullaryExpression(_Expression):
+    """Expression of the form `operator()`."""
+
+    def __init__(self):
+        pass
+
+    def evaluate(self, *args, log=None, context=None):
+        pass
 
 
 class _UnaryExpression(_Expression):
@@ -404,3 +414,60 @@ class Matches(_InfixExpression):
         self._trace(log, [left, right], result)
 
         return result
+
+
+class Now(_NullaryExpression):
+    """Get current time."""
+
+    def __call__(self, *args, log=None, context=None):
+        now_fn = utcnow
+
+        if context and "now" in context:
+            now_fn = context["now"]
+
+        result = now_fn()
+
+        self._trace(log, [], result)
+
+        return result
+
+
+class TimeSince(_BinaryExpression):
+    """Get amount of time elapsed since a moment in the given unit.
+
+    Example:
+        TimeSince($my_prop, 'months')
+    """
+
+    _CONVERSIONS = {
+        unit: conversion
+        for units, conversion in [
+            ({"s", "sec", "second", "seconds"}, 1.0),
+            ({"m", "min", "minute", "minutes"}, 60.0),
+            ({"h", "hr", "hour", "hours"}, 3_600.0),
+            ({"d", "day", "days"}, 86_400.0),
+            ({"w", "wk", "week", "weeks"}, 604_800.0),
+            ({"mo", "mon", "month", "months"}, 2_628_288.0),
+            ({"y", "yr", "year", "years"}, 31_536_000.0),
+        ]
+        for unit in units
+    }
+
+    def __call__(self, *args, log=None, context=None):
+        now_ts = Now()(*args, log=log, context=context)
+        moment, unit = self.evaluate(*args, log=log, context=context)
+
+        delta = now_ts - moment
+        seconds = delta.total_seconds()
+        result = self._convert(seconds, unit)
+
+        self._trace(log, [now_ts, moment, unit], result)
+        return result
+
+    def _convert(self, seconds, unit):
+        unit = unit.lower()
+        try:
+            conversion = self._CONVERSIONS[unit.lower()]
+            return seconds / conversion
+        except KeyError:
+            raise ValueError(f"Invalid unit '{unit}'")
