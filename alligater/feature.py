@@ -188,6 +188,7 @@ class Feature:
         variant_name = None
         value = None
         ts = None
+        source: Optional[str] = None
         if not nested:
             call_id = get_uuid()
             events.EnterGate(log, feature=self, entity=entity, call_id=call_id, now=now)
@@ -206,6 +207,7 @@ class Feature:
                     cached = assignment_cache.get(self, entity)
 
                 if cached:
+                    source = "local"
                     variant_name, value, ts = cached
                 else:
                     if asyncio.iscoroutinefunction(sticky):
@@ -216,6 +218,7 @@ class Feature:
                         variant_name, value, ts = cast(SyncAssignmentFetcher, sticky)(
                             self, entity
                         )
+                    source = "remote"
                 has_assignment = True
             except NoAssignment:
                 pass
@@ -239,6 +242,8 @@ class Feature:
                     variant=variant_name,
                     value=value,
                     assigned=has_assignment,
+                    ts=ts,
+                    source=source,
                     call_id=call_id,
                     now=now,
                 )

@@ -138,8 +138,8 @@ class FeatureSelector(ExpressionSelector):
 
         Args:
             feature - Feature to delegate to
-            expr - Expression on feature evaluation. $variant and $value are
-            variables availalbe for conditioning.
+            expr - Expression on feature evaluation. $variant, $value, and $assigned are
+            variables available for conditioning.
         """
         self.feature = feature
         super().__init__(expr)
@@ -161,6 +161,7 @@ class FeatureSelector(ExpressionSelector):
         result_entity = {
             "value": value.value,
             "variant": value.variant,
+            "assigned": value.ts,
         }
         return await super().__call__(
             call_id, result_entity, log=log, gater=gater, now=now

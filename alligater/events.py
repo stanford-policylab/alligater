@@ -151,7 +151,9 @@ Attributes:
 """
 
 
-StickyAssignment = _Event("StickyAssignment", ("variant", "value", "assigned"))
+StickyAssignment = _Event(
+    "StickyAssignment", ("variant", "value", "assigned", "ts", "source")
+)
 """StickyAssignment is fired when the sticky assignment function is evaluated.
 
 Attributes:
@@ -159,6 +161,8 @@ Attributes:
     value - Assigned value. This can be none, which could be a legitimate
     assigned value, or could indicate there was no value assigned yet.
     assigned - Whether or not a value was assigned.
+    ts - Timestamp of the assignment.
+    source - Source of the assignment ("local" if cached else "remote").
 """
 
 

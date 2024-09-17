@@ -353,6 +353,8 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                                 "variant": "stickyvariant",
                                 "value": "sticky",
                                 "assigned": True,
+                                "ts": mock_assign_ts.isoformat(),
+                                "source": "remote",
                             },
                         },
                         {"type": "LeaveFeature", "data": {"value": "sticky"}},
@@ -439,7 +441,13 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                         {"type": "EnterFeature", "data": {"feature": "test_feature"}},
                         {
                             "type": "StickyAssignment",
-                            "data": {"variant": None, "value": None, "assigned": False},
+                            "data": {
+                                "variant": None,
+                                "value": None,
+                                "assigned": False,
+                                "ts": None,
+                                "source": None,
+                            },
                         },
                         {"type": "EnterRollout", "data": {"rollout": "default"}},
                         {
@@ -726,7 +734,13 @@ class TestObjectLogger(unittest.IsolatedAsyncioTestCase):
                         {"type": "EnterFeature", "data": {"feature": "test_feature"}},
                         {
                             "type": "StickyAssignment",
-                            "data": {"variant": None, "value": None, "assigned": False},
+                            "data": {
+                                "variant": None,
+                                "value": None,
+                                "assigned": False,
+                                "ts": None,
+                                "source": None,
+                            },
                         },
                         {"type": "EnterRollout", "data": {"rollout": "default"}},
                         {
