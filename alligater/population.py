@@ -5,7 +5,7 @@ import alligater.events as events
 import crocodsl.field as field
 import crocodsl.func as func
 
-from .common import ValidationError
+from .common import ValidationError, NowFn, default_now
 
 if TYPE_CHECKING:
     from . import Alligater
@@ -22,6 +22,7 @@ class PopulationSelector(abc.ABC):
         entity: Any,
         log: Optional[events.EventLogger],
         gater: Optional["Alligater"],
+        now: NowFn = default_now,
     ) -> bool: ...
 
     @abc.abstractmethod
@@ -35,7 +36,7 @@ class DefaultSelector(PopulationSelector):
         """Ensures configuration is correct. (It is.)"""
         pass
 
-    async def __call__(self, call_id, entity, log=None, gater=None):
+    async def __call__(self, call_id, entity, log=None, gater=None, now=default_now):
         """Returns True -- everyone is in the default population!
 
         Args:
@@ -46,7 +47,12 @@ class DefaultSelector(PopulationSelector):
             Always True
         """
         events.EvaluatePopulation(
-            log, population=self, entity=entity, member=True, call_id=call_id
+            log,
+            population=self,
+            entity=entity,
+            member=True,
+            call_id=call_id,
+            now=now,
         )
         return True
 
@@ -85,7 +91,7 @@ class ExpressionSelector(PopulationSelector):
         """
         self.expression.validate()
 
-    async def __call__(self, call_id, entity, log=None, gater=None):
+    async def __call__(self, call_id, entity, log=None, gater=None, now=default_now):
         """Check whether entity belongs to a this population.
 
         Args:
@@ -97,11 +103,13 @@ class ExpressionSelector(PopulationSelector):
         """
 
         def trace(name, args, result):
-            events.EvalFunc(log, f=name, args=args, result=result, call_id=call_id)
+            events.EvalFunc(
+                log, f=name, args=args, result=result, call_id=call_id, now=now
+            )
 
-        result = self.expression(entity, log=trace)
+        result = self.expression(entity, log=trace, context={"now": now})
         events.EvaluatePopulation(
-            log, population=self, entity=entity, member=result, call_id=call_id
+            log, population=self, entity=entity, member=result, call_id=call_id, now=now
         )
         return result
 
@@ -130,13 +138,13 @@ class FeatureSelector(ExpressionSelector):
 
         Args:
             feature - Feature to delegate to
-            expr - Expression on feature evaluation. $variant and $value are
-            variables availalbe for conditioning.
+            expr - Expression on feature evaluation. $variant, $value, and $assigned are
+            variables available for conditioning.
         """
         self.feature = feature
         super().__init__(expr)
 
-    async def __call__(self, call_id, entity, log=None, gater=None):
+    async def __call__(self, call_id, entity, log=None, gater=None, now=default_now):
         """Check whether entity belongs to a this population.
 
         Args:
@@ -149,12 +157,15 @@ class FeatureSelector(ExpressionSelector):
         # NOTE: only assignments get logged from this sub-evaluation, never
         # any exposures. In theory the parent exposure should be logged in
         # lieu of the child.
-        value = await getattr(gater, self.feature)(entity, deferred=True)
+        value = await getattr(gater, self.feature)(entity, deferred=True, now=now)
         result_entity = {
             "value": value.value,
             "variant": value.variant,
+            "assigned": value.ts,
         }
-        return await super().__call__(call_id, result_entity, log=log, gater=gater)
+        return await super().__call__(
+            call_id, result_entity, log=log, gater=gater, now=now
+        )
 
 
 class PercentSelector(ExpressionSelector):

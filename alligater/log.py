@@ -4,7 +4,6 @@ import copy
 import logging
 import signal
 import threading
-from datetime import datetime, timezone
 from typing import Optional
 
 import requests
@@ -14,15 +13,10 @@ from urllib3.util import Retry
 
 import alligater.events as events
 
-from .common import SkipLog, encode_json, seq_id, simple_object
+from .common import SkipLog, encode_json, seq_id, simple_object, default_now, NowFn
 
 # Sys log (different than feature trace log)
 log = logging.getLogger("alligater")
-
-
-def default_now():
-    """Default `now` implementation."""
-    return datetime.now(timezone.utc)
 
 
 class DeferrableLogger(events.EventLogger):
@@ -51,25 +45,23 @@ class ObjectLogger(DeferrableLogger):
     """Logger that aggregates event data as an object."""
 
     def __init__(
-        self, write, trace=False, now=default_now, workers=1, install_signals=True
+        self, write, trace: bool = False, workers: int = 1, install_signals: bool = True
     ):
         """Create a new ObjectLogger with the given `write` callback.
 
         Args:
             write - Callback when event data is ready.
             trace - Whether to enable trace logging
-            now - Function to get current datetime
             workers - Number of background workers to handle IO
             install_signals - Whether to install signal handlers for cleanup.
                 If you are running in an environment like uvicorn, there may be
                 conflicts with signal handlers.
         """
-        self._now = now
         self._cv = threading.Condition()
         self._write = write
-        self._cache = {}
-        self._finished = []
-        self._deferred = set()
+        self._cache = dict[str, dict]()
+        self._finished = list[dict]()
+        self._deferred = set[str]()
         self._trace = trace
         self._stopped = False
         self._workers = [
@@ -78,7 +70,8 @@ class ObjectLogger(DeferrableLogger):
             )
             for w in range(workers)
         ]
-        [w.start() for w in self._workers]
+        for w in self._workers:
+            w.start()
 
         # Cleanup threads and try to drain the queue if possible when exiting.
         atexit.register(self._drain)
@@ -91,7 +84,7 @@ class ObjectLogger(DeferrableLogger):
         """Shut off the logger and send any pending messages."""
         self._drain()
 
-    def __call__(self, event):
+    def __call__(self, event, now: NowFn = default_now):
         """Log a single event."""
         # Every event tracks an ID that is unique to the invocation.
         call_id = event.call_id
@@ -99,7 +92,7 @@ class ObjectLogger(DeferrableLogger):
         with self._cv:
             if event == events.EnterGate:
                 self._cache[call_id] = {
-                    "ts": self._now(),
+                    "ts": now(),
                     "call_id": call_id,
                     "entity": simple_object(event.entity, with_type=True),
                     "feature": event.feature.to_dict(),
@@ -362,7 +355,7 @@ class PrintLogger(events.EventLogger):
         """
         self._trace = trace
 
-    def __call__(self, event):
+    def __call__(self, event, now: NowFn = default_now):
         trace = self._trace
 
         if event == events.EnterGate:
@@ -370,6 +363,7 @@ class PrintLogger(events.EventLogger):
             print("CallId:", event.call_id)
             print("Entity:", event.entity)
             print("Feature:", event.feature.to_dict())
+            print("Current time:", now())
             if trace:
                 print("Trace:")
 

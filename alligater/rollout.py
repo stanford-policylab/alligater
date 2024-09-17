@@ -5,7 +5,7 @@ import crocodsl.field as field
 import crocodsl.func as func
 
 from .arm import Arm
-from .common import ValidationError
+from .common import ValidationError, NowFn, default_now
 from .population import Population, PopulationSelector
 
 if TYPE_CHECKING:
@@ -234,6 +234,7 @@ class Rollout:
         entity: dict,
         log: Optional[events.EventLogger] = None,
         gater: Optional["Alligater"] = None,
+        now: NowFn = default_now,
     ) -> Optional[str]:
         """Apply this rollout to the given entity.
 
@@ -243,30 +244,37 @@ class Rollout:
         Returns:
             A variant name if one should be applied; otherwise None.
         """
-        events.EnterRollout(log, rollout=self, call_id=call_id)
+        events.EnterRollout(log, rollout=self, call_id=call_id, now=now)
 
-        if not await self.population(call_id, entity, log=log, gater=gater):
+        if not await self.population(call_id, entity, log=log, gater=gater, now=now):
             events.LeaveRollout(log, member=False, call_id=call_id)
             return None
 
         def trace(name, args, result):
-            events.EvalFunc(log, f=name, args=args, result=result, call_id=call_id)
+            events.EvalFunc(
+                log, f=name, args=args, result=result, call_id=call_id, now=now
+            )
 
-        x = self.randomize(entity, log=trace)
+        x = self.randomize(entity, log=trace, context={"now": now})
 
         events.Randomize(
-            log, entity=entity, function=self.randomize, result=x, call_id=call_id
+            log,
+            entity=entity,
+            function=self.randomize,
+            result=x,
+            call_id=call_id,
+            now=now,
         )
 
         cutoff = 0.0
         for arm in self.arms:
             cutoff += arm.weight
-            events.EnterArm(log, arm=arm, cutoff=cutoff, x=x, call_id=call_id)
+            events.EnterArm(log, arm=arm, cutoff=cutoff, x=x, call_id=call_id, now=now)
             if x <= cutoff:
-                events.LeaveArm(log, matched=True, call_id=call_id)
-                events.LeaveRollout(log, member=True, call_id=call_id)
+                events.LeaveArm(log, matched=True, call_id=call_id, now=now)
+                events.LeaveRollout(log, member=True, call_id=call_id, now=now)
                 return arm.variant_name
-            events.LeaveArm(log, matched=False, call_id=call_id)
+            events.LeaveArm(log, matched=False, call_id=call_id, now=now)
 
         # This would only happen if something was tinkered with after validation
         raise RuntimeError("Could not find arm for entity")

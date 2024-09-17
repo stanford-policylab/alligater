@@ -1,9 +1,11 @@
 import math
 from enum import Enum
 from typing import Generic, Optional, TypeVar
+from datetime import datetime
 
 from .events import EventLogger
 from .log import DeferrableLogger
+from .common import NowFn, default_now
 
 
 class CallType(Enum):
@@ -35,9 +37,11 @@ class Value(Generic[T]):
         call_id: Optional[str] = None,
         call_type: CallType = CallType.ASSIGNMENT,
         log: Optional[EventLogger] = None,
+        now: NowFn = default_now,
     ):
         self._value = value
         self._variant = variant
+        self._ts = now()
         self._call_id = call_id
         self._call_type = call_type
         self._log = log
@@ -58,6 +62,11 @@ class Value(Generic[T]):
         return self._variant
 
     @property
+    def ts(self) -> datetime:
+        """Get the timestamp the value was created."""
+        return self._ts
+
+    @property
     def call_type(self) -> CallType:
         """Check the type of call (assignment vs exposure)."""
         return self._call_type
@@ -71,6 +80,10 @@ class Value(Generic[T]):
             extra - Optional additional data to log.
         """
         if isinstance(self._log, DeferrableLogger) and self._call_id:
+            # Note that we *don't* override the timestamp here, even though we could.
+            # There is some value in keeping the original value of the timestamp, since
+            # it represents when a decision was made. There will be other timestamps when
+            # the log gets ingested that will better represent when the exposure happened.
             self._log.write_log(self._call_id, extra=extra)
             # If the call type wasn't already an exposure, it should be now!
             self._call_type = CallType.EXPOSURE

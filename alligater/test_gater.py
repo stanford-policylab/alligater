@@ -3,6 +3,7 @@ import tempfile
 import time
 import unittest
 from unittest.mock import Mock, call
+from datetime import datetime, UTC
 
 import responses
 
@@ -51,18 +52,24 @@ class TestGater(unittest.IsolatedAsyncioTestCase):
             default_arm="foo",
         )
 
-        gater = Alligater(features=[foo], sticky=_sticky)
-        gater._local_assignments.set(foo, {"id": "a"}, "bar", "Bar")
+        mock_ts = datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC)
+        mock_ts2 = datetime(2024, 1, 2, 3, 4, 6, tzinfo=UTC)
+        gater = Alligater(features=[foo], sticky=_sticky, now=lambda: mock_ts2)
+        gater._local_assignments.set(foo, {"id": "a"}, "bar", "Bar", mock_ts)
         assert await gater.foo({"id": "a"}) == "Bar"
         assert await gater.foo({"id": "b"}) == "Foo"
-        assert gater._local_assignments.get(foo, {"id": "b"}) == ("foo", "Foo")
+        assert gater._local_assignments.get(foo, {"id": "b"}) == (
+            "foo",
+            "Foo",
+            mock_ts2,
+        )
         gater._local_assignments.clear()
         assert await gater.foo({"id": "a"}) == "Foo"
 
     async def test_deferred_exposure_logging(self):
         def _sticky(feature, entity):
             if entity["id"] == 2:
-                return "bar", "Bar"
+                return "bar", "Bar", datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC)
             raise NoAssignment
 
         logger = MockDeferredLogger()
@@ -99,7 +106,11 @@ class TestGater(unittest.IsolatedAsyncioTestCase):
     async def test_drop_deferred_logging(self):
         logger = MockDeferredLogger()
         gater = Alligater(
-            sticky=lambda x, y: ("foo", "Foo"),
+            sticky=lambda x, y: (
+                "foo",
+                "Foo",
+                datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC),
+            ),
             logger=logger,
             features=[
                 Feature("foo", variants=[Variant("foo", "Foo")], default_arm="foo"),
@@ -259,6 +270,63 @@ feature:
             assert await gater.ft2({"id": "id_2"}) == "y"
             assert await gater.ft3({"id": "id_1"}) == "i"
             assert await gater.ft3({"id": "id_2"}) == "j"
+            gater.stop()
+
+    async def test_cross_ref_features_assigned_ts(self):
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.write(
+                b"""
+feature:
+  name: ft1
+  variants:
+    var1: a
+    var2: b
+  rollouts:
+    - name: segment1
+      arms: [var2]
+      sticky: true
+      population:
+        type: explicit
+        value: [id_2]
+  default_arm: var1
+
+---
+
+feature:
+  name: ft2
+  variants:
+    var_old: old
+    var_new: new
+  default_arm: var_old
+  rollouts:
+    - name: segmentK
+      arms: [var_new]
+      population:
+        type: feature
+        name: ft1
+        where: TimeSince($assigned, 'mo') Lt 6
+"""
+            )
+            tf.flush()
+
+            mock_assigned_ts = datetime(2023, 1, 2, 3, 4, 5, tzinfo=UTC)
+            mock_current_ts = datetime(2023, 8, 2, 3, 4, 6, tzinfo=UTC)
+
+            def _sticky(feature, entity):
+                if entity["id"] == "id_2" and feature.name == "ft1":
+                    return "var2", "b", mock_assigned_ts
+                raise NoAssignment
+
+            gater = Alligater(
+                yaml=tf.name,
+                reload_interval=1,
+                sticky=_sticky,
+                now=lambda: mock_current_ts,
+            )
+            assert await gater.ft1({"id": "id_1"}) == "a"
+            assert await gater.ft1({"id": "id_2"}) == "b"
+            assert await gater.ft2({"id": "id_1"}) == "new"
+            assert await gater.ft2({"id": "id_2"}) == "old"
             gater.stop()
 
     @responses.activate

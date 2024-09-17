@@ -1,18 +1,20 @@
 import abc
+import inspect
 from typing import Any, Optional, Sequence
 
-from .common import ValidationError, simple_object
+from .common import ValidationError, simple_object, NowFn, default_now
 
 
 class EventLogger(abc.ABC):
     """Base class to define a logger."""
 
     @abc.abstractmethod
-    def __call__(self, event: "_EventInstance"):
+    def __call__(self, event: "_EventInstance", now: NowFn = default_now):
         """Log the given event.
 
         Args:
             event - instantiated event
+            now - Function to call to get the current time
         """
         ...
 
@@ -93,8 +95,23 @@ class _Event:
                     "Event {} missing slot value for {}".format(self.name, slot)
                 )
 
+        now_fn = kwargs.pop("now", None)
         instance = _EventInstance(self.name, **kwargs)
-        log(instance)
+        # Assemble args/kwargs for logger.
+        log_args: list[Any] = [instance]
+        log_kwargs: dict[str, Any] = {}
+        # If we have a `now_fn` passed in, see if the logger accepts it.
+        # This lets us support our own advanced loggers while keeping
+        # backwards-compatibility for using the `print` function.
+        if now_fn:
+            params = inspect.signature(log).parameters
+            if "now" in params:
+                log_kwargs["now"] = now_fn
+            else:
+                ts = now_fn()
+                pfx = f"[{ts}]"
+                log_args.insert(0, pfx)
+        log(*log_args, **log_kwargs)
 
     def __repr__(self):
         return self.name
@@ -134,7 +151,9 @@ Attributes:
 """
 
 
-StickyAssignment = _Event("StickyAssignment", ("variant", "value", "assigned"))
+StickyAssignment = _Event(
+    "StickyAssignment", ("variant", "value", "assigned", "ts", "source")
+)
 """StickyAssignment is fired when the sticky assignment function is evaluated.
 
 Attributes:
@@ -142,6 +161,8 @@ Attributes:
     value - Assigned value. This can be none, which could be a legitimate
     assigned value, or could indicate there was no value assigned yet.
     assigned - Whether or not a value was assigned.
+    ts - Timestamp of the assignment.
+    source - Source of the assignment ("local" if cached else "remote").
 """
 
 
