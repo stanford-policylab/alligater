@@ -2,6 +2,7 @@ import traceback
 
 import requests
 import yaml
+from typing import Callable
 
 try:
     from yaml import CLoader as Loader
@@ -17,6 +18,9 @@ from .log import log
 from .population import Population
 from .rollout import Rollout
 from .variant import Variant
+
+
+ConfigSource = str | Callable[[], str]
 
 
 def _expand_variants(variants):
@@ -286,31 +290,43 @@ def parse_yaml(s, default_features=None, raise_exceptions=False):
             return default_features
 
 
-def load_config(path, authorization=None):
-    """Load the string contents of a given path.
+_allowed_headers = {"authorization", "accept", "content-type"}
 
-    Path can be either a local file or a remote URL.
+
+def load_config(source: ConfigSource, **kwargs: dict) -> str:
+    """Load a string version of the yaml from the given source.
+
+    Source can be either a local file or a remote URL, or a function.
 
     Args:
-        path - Local file path or remote URL.
+        source - Local file path or remote URL or a function that returns a string.
+
+    Kwargs:
         authorization - Value to use for `Authorization` header, e.g.:
-                        "Bearer my.access.token"
+                        "Bearer my.access.token" -- only relevant for remote URLs.
+        Other kwargs are passed to the function if it's a callable.
 
     Returns:
-        String contents of the path.
+        String contents of the file.
     """
+    if callable(source):
+        return source(**kwargs)
+    elif not isinstance(source, str):
+        raise ValueError("Expected a string or callable")
+
     # Load from a remote path if given something that looks like a URL
-    if path.startswith("http://") or path.startswith("https://"):
-        headers = {}
-        if authorization:
-            headers["Authorization"] = authorization
-        r = requests.get(path, headers=headers)
-        if r.status_code != 200:
+    if source.startswith("http://") or source.startswith("https://"):
+        headers: dict[str, str] = {}
+        for k, v in kwargs.items():
+            if k.lower() in _allowed_headers:
+                headers[k] = str(v)
+        r = requests.get(source, headers=headers)
+        if r.status_code < 200 or r.status_code >= 300:
             raise RuntimeError(
                 "Failed to load config. Got status {}".format(r.status_code)
             )
         return r.text
     else:
         # Assume it was a local file path
-        with open(path) as f:
+        with open(source) as f:
             return f.read()

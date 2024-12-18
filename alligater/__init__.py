@@ -2,7 +2,7 @@ import atexit
 import hashlib
 import threading
 from functools import partial
-from typing import Optional
+from typing import Optional, Callable, Any, Tuple
 
 from .arm import Arm
 from .cache import AssignmentCache
@@ -20,6 +20,7 @@ from .common import (
     NowFn,
 )
 from .feature import Feature
+from .events import EventLogger
 from .log import (
     DeferrableLogger,
     NetworkLogger,
@@ -28,12 +29,15 @@ from .log import (
     default_logger,
     log,
 )
-from .parse import load_config, parse_yaml
+from .parse import load_config, parse_yaml, ConfigSource
 from .population import Population
 from .rand import seed
 from .rollout import Rollout
 from .value import CallType, Value
 from .variant import Variant
+
+
+StickyFn = Callable[[Feature, Any], Tuple[str, Any, int]]
 
 
 class Alligater:
@@ -55,12 +59,12 @@ class Alligater:
 
     def __init__(
         self,
-        features=None,
-        yaml=None,
-        logger=default_logger,
-        reload_interval=0,
-        sticky=None,
-        loader_kwargs=None,
+        features: list[Feature] | dict[str, Feature] | None = None,
+        yaml: ConfigSource | None = None,
+        logger: EventLogger = default_logger,
+        reload_interval: float = 0,
+        sticky: StickyFn | None = None,
+        loader_kwargs: dict | None = None,
         now: NowFn = default_now,
     ):
         """Create a new feature gater.

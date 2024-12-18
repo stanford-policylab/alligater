@@ -1,5 +1,9 @@
 import unittest
+import tempfile
+import pytest
 
+import responses
+from responses import matchers
 import alligater.parse as parse
 from crocodsl.field import _Field
 from crocodsl.func import Hash
@@ -361,3 +365,45 @@ class TestParse(unittest.TestCase):
         assert expected == actual, "Expected:\n{}\n\nActual:\n{}\n".format(
             expected.to_dict(), actual.to_dict()
         )
+
+    def test_load_config_local(self):
+        with tempfile.NamedTemporaryFile("w") as f:
+            f.write("teststring")
+            f.flush()
+            parsed = parse.load_config(f.name)
+            assert parsed == "teststring"
+
+    @responses.activate
+    def test_load_config_remote(self):
+        responses.add(responses.GET, "http://example.com", body="teststring")
+        parsed = parse.load_config("http://example.com")
+        assert parsed == "teststring"
+
+    @responses.activate
+    def test_load_config_remote_auth(self):
+        responses.add(
+            responses.GET,
+            "http://example.com",
+            body="teststring",
+            match=[matchers.header_matcher({"authorization": "Bearer token"})],
+        )
+        parsed = parse.load_config("http://example.com", authorization="Bearer token")
+        assert parsed == "teststring"
+
+    @responses.activate
+    def test_load_config_remote_invalid(self):
+        with pytest.raises(Exception) as exc_info:
+            responses.add(responses.GET, "http://example.com", status=400)
+            parse.load_config("http://example.com")
+        assert str(exc_info.value) == "Failed to load config. Got status 400"
+
+    def test_load_config_fn(self):
+        parsed = parse.load_config(lambda: "foo")
+        assert parsed == "foo"
+
+    def test_load_config_fn_kwargs(self):
+        def _loader(*, arg: str) -> str:
+            return f"test: {arg}"
+
+        parsed = parse.load_config(_loader, arg="foo")
+        assert parsed == "test: foo"
