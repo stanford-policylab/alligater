@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "alligater"
 version = "0.3.2"
+license = "MIT"
 description = "Randomization and gating library for Python."
 authors = ["Joe Nudell <jnudell@hks.harvard.edu>"]
 readme = "README.md"
