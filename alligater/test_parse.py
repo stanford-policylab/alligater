@@ -6,7 +6,7 @@ import responses
 from responses import matchers
 import alligater.parse as parse
 from crocodsl.field import _Field
-from crocodsl.func import Hash
+from crocodsl.func import Hash, TrimPrefix
 
 from .arm import Arm
 from .feature import Feature
@@ -289,6 +289,50 @@ FIXTURES = {
                   - id_3
                   - id_4
                 field: $custom
+              arms:
+                - variant: a
+                  weight: 1.0
+        """,
+    },
+    # Gate with custom expression in the explicit population field
+    "custom_explicit_expression": {
+        "feature": Feature(
+            name="custom_explicit_expression",
+            variants=[
+                Variant("a", "A"),
+                Variant("b", "B"),
+                Variant("off", None),
+            ],
+            default_arm=Arm("off"),
+            rollouts=[
+                Rollout(
+                    name="test_segment_1",
+                    population=Population.Explicit(
+                        ["id_1", "id_2", "id_3", "id_4"],
+                        id_field=TrimPrefix(_Field("custom"), "prefix_"),
+                    ),
+                    arms=[Arm("a", weight=1.0)],
+                ),
+            ],
+        ),
+        "yaml": """
+        feature:
+          name: custom_explicit_expression
+          variants:
+            a: 'A'
+            b: 'B'
+            "off": null
+          default_arm: "off"
+          rollouts:
+            - name: test_segment_1
+              population:
+                type: explicit
+                value:
+                  - id_1
+                  - id_2
+                  - id_3
+                  - id_4
+                field: TrimPrefix($custom, "prefix_")
               arms:
                 - variant: a
                   weight: 1.0

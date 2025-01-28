@@ -227,6 +227,30 @@ class TestFunc(unittest.TestCase):
         )
         assert func.TimeSince(orig_ts, "y")(context={"now": lambda: ts}) == 1 / 365
 
+    def test_trim_prefix(self):
+        """Test removal of characters from a string."""
+        assert repr(func.TrimPrefix("abc", "b")) == "TrimPrefix('abc', 'b')"
+        assert func.TrimPrefix("abc", "ab")() == "c"
+        assert func.TrimPrefix("abc", "a")() == "bc"
+        assert func.TrimPrefix("abc", "c")() == "abc"
+        assert func.TrimPrefix("prefixabc", "pref")() == "ixabc"
+        with self.assertRaises(TypeError):
+            func.TrimPrefix(None, "a")()
+        with self.assertRaises(TypeError):
+            func.TrimPrefix("abc", None)()
+
+    def test_trim_suffix(self):
+        """Test removal of characters from a string."""
+        assert repr(func.TrimSuffix("abc", "b")) == "TrimSuffix('abc', 'b')"
+        assert func.TrimSuffix("abc", "bc")() == "a"
+        assert func.TrimSuffix("abc", "c")() == "ab"
+        assert func.TrimSuffix("abc", "a")() == "abc"
+        assert func.TrimSuffix("abcsuffix", "suffix")() == "abc"
+        with self.assertRaises(TypeError):
+            func.TrimSuffix(None, "a")()
+        with self.assertRaises(TypeError):
+            func.TrimSuffix("abc", None)()
+
     def test_composition(self):
         """Make sure functions can be composed."""
         assert func.Hash(func.Concat("a", "b", "c"))() == 0.7054175881782409

@@ -471,3 +471,43 @@ class TimeSince(_BinaryExpression):
             return seconds / conversion
         except KeyError:
             raise ValueError(f"Invalid unit '{unit}'")
+
+
+class TrimPrefix(_BinaryExpression):
+    """Remove a prefix from a string.
+
+    Example:
+        TrimPrefix($my_prop, 'prefix')
+    """
+
+    def __call__(self, *args, log=None, context=None):
+        s, prefix = self.evaluate(*args, log=log, context=context)
+
+        if not isinstance(s, str):
+            raise TypeError(f"Expect {type(s)} to be str")
+
+        result = s.removeprefix(prefix)
+
+        self._trace(log, [s, prefix], result)
+
+        return result
+
+
+class TrimSuffix(_BinaryExpression):
+    """Remove a suffix from a string.
+
+    Example:
+        TrimSuffix($my_prop, 'suffix')
+    """
+
+    def __call__(self, *args, log=None, context=None):
+        s, suffix = self.evaluate(*args, log=log, context=context)
+
+        if not isinstance(s, str):
+            raise TypeError(f"Expect {type(s)} to be str")
+
+        result = s.removesuffix(suffix)
+
+        self._trace(log, [s, suffix], result)
+
+        return result
