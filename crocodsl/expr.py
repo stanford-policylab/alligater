@@ -134,7 +134,12 @@ class ExprCompiler(GramListener):
 
     def enterFunction(self, ctx):
         opName = ctx.NAME().getText()
-        op = getattr(func, opName)
+        op: func._Expression | None = None
+        try:
+            op = getattr(func, opName)
+        except AttributeError as e:
+            raise SyntaxError(f"Function '{opName}' is not defined") from e
+
         self._enterNode(ctx, op, [])
 
     def exitFunction(self, ctx):
@@ -157,6 +162,9 @@ class ExprCompiler(GramListener):
     def _enterNode(self, ctx, f, args):
         self.operators[ctx] = f
         self.arguments[ctx] = args
+
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        raise SyntaxError(f"Syntax error at {line}:{column}: {msg}")
 
     def _leaveNode(self, ctx):
         # Get the node's operation and arguments.
@@ -198,7 +206,7 @@ class ExprCompiler(GramListener):
             self.root = value
 
 
-def _compile(s, debug=False):
+def _compile(s: str, debug: bool = False) -> ExprCompiler:
     """Parse the symbolic expression and return the full parse tree.
 
     Args:
@@ -215,11 +223,14 @@ def _compile(s, debug=False):
     parser = GramParser(stream)
     compiler = ExprCompiler(debug=debug)
     walker = ParseTreeWalker()
-    walker.walk(compiler, parser.expr())
+    # The `program` rule is the top-level rule that requires the entire
+    # input to be valid (i.e., and expression + EOF). This will cause
+    # an error if there is any trailing garbage / typos.
+    walker.walk(compiler, parser.program())
     return compiler
 
 
-def parse(s, debug=False):
+def parse(s: str, debug: bool = False) -> func._Expression:
     """Parse a given symbolic expression into an _Expression.
 
     Examples:

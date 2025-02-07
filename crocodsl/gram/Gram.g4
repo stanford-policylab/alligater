@@ -1,5 +1,10 @@
 grammar Gram;
 
+
+program
+    : expr + EOF #fullexpr
+    ;
+
 expr
     : value                                                                      #literal
     | NOT? '(' inner=expr ')'                                                    #parens

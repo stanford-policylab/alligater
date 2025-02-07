@@ -112,6 +112,15 @@ class TestExpr(unittest.TestCase):
             {"timestamp": orig_ts}, context={"now": lambda: now_ts}
         )
 
+    def test_time_since_missing_value(self):
+        """Test that calling TimeSince with a missing value raises a TypeError."""
+        now_ts = datetime(2020, 1, 3, 3, 0, 0, tzinfo=UTC)
+
+        with self.assertRaises(TypeError):
+            parse("TimeSince($timestamp, 'd') Gt 2")(
+                {}, context={"now": lambda: now_ts}
+            )
+
     def test_compose(self):
         """More tests for composition of operators."""
         assert parse("Hash(Concat('test-', $id)) Lt 0.5").equivalent(
@@ -174,3 +183,9 @@ class TestExpr(unittest.TestCase):
             .or_(_Field("outcomes").has("xyz")),
             "(Concat($first_name, ' ', $last_name) Matches 'foo') Or ('xyz' In $outcomes)",
         )
+
+    def test_syntax_error_trailing(self):
+        """Test calling an undefined function."""
+        with self.assertRaises(SyntaxError):
+            # Gte should be Ge
+            parse("TimeSince($assigned, 'mo') Gte 6")

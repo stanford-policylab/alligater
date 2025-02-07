@@ -45,7 +45,11 @@ class ObjectLogger(DeferrableLogger):
     """Logger that aggregates event data as an object."""
 
     def __init__(
-        self, write, trace: bool = False, workers: int = 1, install_signals: bool = True
+        self,
+        write,
+        trace: bool = False,
+        workers: int = 1,
+        install_signals: bool = True,
     ):
         """Create a new ObjectLogger with the given `write` callback.
 
