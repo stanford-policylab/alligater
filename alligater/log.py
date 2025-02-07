@@ -48,7 +48,6 @@ class ObjectLogger(DeferrableLogger):
         self,
         write,
         trace: bool = False,
-        syslog: bool = False,
         workers: int = 1,
         install_signals: bool = True,
     ):
@@ -68,7 +67,6 @@ class ObjectLogger(DeferrableLogger):
         self._finished = list[dict]()
         self._deferred = set[str]()
         self._trace = trace
-        self._syslog = syslog
         self._stopped = False
         self._workers = [
             threading.Thread(
