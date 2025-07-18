@@ -511,3 +511,23 @@ class TrimSuffix(_BinaryExpression):
         self._trace(log, [s, suffix], result)
 
         return result
+
+
+# Global registry of all functions available to the DSL.
+FUNCTION_REGISTRY = {}
+
+
+def register_function(name: str, func: type[_Expression]):
+    """Register a function in the global registry."""
+    FUNCTION_REGISTRY[name] = func
+
+
+# Pre-register public functions in this file
+_init_globals = globals().copy()
+for _name, _func in _init_globals.items():
+    if (
+        isinstance(_func, type)
+        and issubclass(_func, _Expression)
+        and not _name.startswith("_")
+    ):
+        register_function(_name, _func)

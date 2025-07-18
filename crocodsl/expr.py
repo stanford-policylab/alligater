@@ -136,9 +136,12 @@ class ExprCompiler(GramListener):
         opName = ctx.NAME().getText()
         op: func._Expression | None = None
         try:
-            op = getattr(func, opName)
-        except AttributeError as e:
-            raise SyntaxError(f"Function '{opName}' is not defined") from e
+            op = func.FUNCTION_REGISTRY[opName]
+        except KeyError:
+            try:
+                op = getattr(func, opName)
+            except AttributeError as e:
+                raise SyntaxError(f"Function '{opName}' is not defined") from e
 
         self._enterNode(ctx, op, [])
 
