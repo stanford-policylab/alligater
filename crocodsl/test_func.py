@@ -302,7 +302,8 @@ class TestFunc(unittest.TestCase):
                 return val
 
         func.register_function("AddExcitement", CustomFunc)
-        
+
         import crocodsl.expr
+
         expr = crocodsl.expr.parse("AddExcitement('foo')")
         assert expr() == "foo!!!"
