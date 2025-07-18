@@ -286,3 +286,23 @@ class TestFunc(unittest.TestCase):
 
         assert repr(func.Literal([1, 2, 3]).has(1)) == "1 In [1, 2, 3]"
         assert func.Literal([1, 2, 3]).has(1)() is True
+
+    def test_register_function(self):
+        """Test that functions can be registered."""
+
+        class CustomFunc(func._UnaryExpression):
+            """Compute the assignment hash of a value."""
+
+            def __call__(self, *args, log=None, context=None):
+                arg = self.evaluate(*args, log=log, context=context)
+                val = str(arg) + "!!!"
+
+                self._trace(log, [arg], val)
+
+                return val
+
+        func.register_function("AddExcitement", CustomFunc)
+        
+        import crocodsl.expr
+        expr = crocodsl.expr.parse("AddExcitement('foo')")
+        assert expr() == "foo!!!"

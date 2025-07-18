@@ -1,5 +1,6 @@
 import re
 from collections.abc import Iterable, Sequence
+from typing import Callable
 
 from .common import hash_id, utcnow
 
@@ -511,3 +512,16 @@ class TrimSuffix(_BinaryExpression):
         self._trace(log, [s, suffix], result)
 
         return result
+
+
+# Global registry of all functions available to the DSL.
+FUNCTION_REGISTRY = {}
+
+def register_function(name: str, func: type[_Expression]):
+    """Register a function in the global registry."""
+    FUNCTION_REGISTRY[name] = func
+
+# Pre-register public functions in this file
+for name, func in globals().items():
+    if isinstance(func, type) and issubclass(func, _Expression) and not name.startswith("_"):
+        register_function(name, func)
